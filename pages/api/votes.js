@@ -24,26 +24,34 @@ const retryRequest = async (fn, retries = 3, delay = 1000) => {
 // Store CSV data in Supabase
 async function storeCSVData(csvData, changes) {
   try {
-    // Store the CSV backup
-    const timestamp = new Date().toISOString();
-    const { data: csvBackup, error: csvError } = await supabase.storage
-      .from("vote-data")
-      .upload(`backups/${timestamp}.csv`, csvData);
+    // Only store CSV and changes if we have actual changes
+    if (
+      changes &&
+      changes.length > 0 &&
+      changes.some((change) => change.hasChanges)
+    ) {
+      // Store the CSV backup
+      const timestamp = new Date().toISOString();
+      const { data: csvBackup, error: csvError } = await supabase.storage
+        .from("vote-data")
+        .upload(`backups/${timestamp}.csv`, csvData);
 
-    if (csvError) throw csvError;
+      if (csvError) throw csvError;
 
-    // Store the changes if any are provided
-    if (changes && changes.length > 0) {
-      const { data: changeData, error: changeError } = await supabase
-        .from("vote_changes")
-        .insert(
-          changes.map((change) => ({
-            ...change,
-            created_at: new Date().toISOString(),
-          }))
-        );
+      // Store only the changes that actually changed
+      const actualChanges = changes.filter((change) => change.hasChanges);
+      if (actualChanges.length > 0) {
+        const { data: changeData, error: changeError } = await supabase
+          .from("vote_changes")
+          .insert(
+            actualChanges.map((change) => ({
+              ...change,
+              created_at: new Date().toISOString(),
+            }))
+          );
 
-      if (changeError) throw changeError;
+        if (changeError) throw changeError;
+      }
     }
 
     return true;
