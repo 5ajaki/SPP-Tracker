@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { supabase } from "../lib/supabaseClient";
 
 export default function VoteTracker() {
   const [previousVotesData, setPreviousVotesData] = useState({});
@@ -140,7 +141,26 @@ export default function VoteTracker() {
     return new Date(timestamp).toLocaleString();
   }
 
-  // Function to update the changes
+  // Function to load historical changes
+  async function loadHistoricalChanges() {
+    try {
+      const { data, error } = await supabase
+        .from("vote_changes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100); // Adjust limit as needed
+
+      if (error) throw error;
+
+      if (data) {
+        setChangeLog(data);
+      }
+    } catch (error) {
+      console.error("Error loading historical changes:", error);
+    }
+  }
+
+  // Modified updateChanges function to store changes
   async function updateChanges() {
     const newVotesData = await fetchVotesData();
 
@@ -158,9 +178,14 @@ export default function VoteTracker() {
       // Detect changes
       const changes = detectChanges(mostRecentVotesData, newVotesData);
 
-      // Update the change log
+      // If there are changes, send them to the API
       if (changes.length > 0) {
-        setChangeLog((prevLog) => [...changes, ...prevLog]);
+        try {
+          await axios.post("/api/votes", { changes });
+          setChangeLog((prevLog) => [...changes, ...prevLog]);
+        } catch (error) {
+          console.error("Error storing changes:", error);
+        }
       }
 
       // Update the most recent data
@@ -174,6 +199,7 @@ export default function VoteTracker() {
 
   // Set up initial fetching and periodic updates
   useEffect(() => {
+    loadHistoricalChanges(); // Load historical changes when component mounts
     updateChanges();
 
     // Set up automatic refresh every 60 seconds
