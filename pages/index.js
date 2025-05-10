@@ -239,8 +239,30 @@ export default function VoteTracker() {
     const date = new Date(timestamp);
     const now = new Date();
 
+    // For our specific use case with dates in 2025, always use the full date format
+    if (date.getFullYear() === 2025) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
     // Calculate time difference in milliseconds
     const timeDiff = now - date;
+
+    // If the date is in the future, always show the full date
+    if (timeDiff < 0) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
 
     // Convert to minutes, hours, days
     const minutesDiff = Math.floor(timeDiff / (1000 * 60));
