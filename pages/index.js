@@ -327,6 +327,42 @@ export default function VoteTracker() {
 
     // If this is the first fetch, just store the data
     if (Object.keys(previousVotesData).length === 0) {
+      // Create "new votes" entries for every vote in the first fetch
+      const initialChanges = Object.values(newVotesData).map((voteData) => {
+        const ranking = voteData.choiceRanking || [];
+        const noneBelowIndex = Array.isArray(ranking)
+          ? ranking.findIndex((r) => r && r.trim && r.trim() === "NONE BELOW")
+          : -1;
+        const trimmedRanking =
+          Array.isArray(ranking) && noneBelowIndex !== -1
+            ? ranking.slice(0, noneBelowIndex + 1)
+            : Array.isArray(ranking)
+            ? ranking
+            : [];
+
+        return {
+          type: "new",
+          voterAddress: voteData.address,
+          oldRanking: [],
+          newRanking: trimmedRanking,
+          votingPower: voteData.votingPower || 0,
+          timestamp: voteData.timestamp || new Date(),
+          hasChanges: true,
+        };
+      });
+
+      // Store these initial votes as "new" votes
+      try {
+        await axios.post("/api/votes", { changes: initialChanges });
+        setChangeLog(initialChanges);
+
+        // Extract voter addresses to resolve ENS names
+        const addresses = initialChanges.map((change) => change.voterAddress);
+        resolveEnsNames(addresses);
+      } catch (error) {
+        console.error("Error storing initial changes:", error);
+      }
+
       setPreviousVotesData(JSON.parse(JSON.stringify(newVotesData)));
       setMostRecentVotesData(JSON.parse(JSON.stringify(newVotesData)));
       setLoading(false);
