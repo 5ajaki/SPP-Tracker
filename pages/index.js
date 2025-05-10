@@ -458,7 +458,7 @@ export default function VoteTracker() {
           className={filterType === "new" ? "filter-active" : ""}
           onClick={() => setFilterType("new")}
         >
-          New Votes
+          Initial Votes
         </button>
         <button
           className={filterType === "changed" ? "filter-active" : ""}
@@ -497,7 +497,7 @@ export default function VoteTracker() {
                   }`}
                 >
                   {change.type === "new"
-                    ? "New Vote"
+                    ? "Initial Vote"
                     : change.hasChanges === false
                     ? "No Change"
                     : "Vote Changed"}
@@ -569,7 +569,7 @@ export default function VoteTracker() {
                     }`}
                   >
                     {change.type === "new"
-                      ? "New Vote"
+                      ? "Initial Vote"
                       : change.hasChanges === false
                       ? "Unchanged Vote"
                       : "New Rankings"}
