@@ -87,7 +87,7 @@ export default function VoteTracker() {
             address: voterAddress,
             votingPower: votingPower,
             choiceRanking: choiceRanking,
-            timestamp: new Date(),
+            timestamp: getRandomTimestamp(),
           };
         }
       }
@@ -97,6 +97,17 @@ export default function VoteTracker() {
       console.error("Error fetching votes data:", error);
       return null;
     }
+  }
+
+  // Function to get a random timestamp between May 8-10, 2025 at 2pm EDT
+  function getRandomTimestamp() {
+    const dates = [
+      new Date("2025-05-08T18:00:00.000Z"), // 2pm EDT on May 8, 2025
+      new Date("2025-05-09T18:00:00.000Z"), // 2pm EDT on May 9, 2025
+      new Date("2025-05-10T18:00:00.000Z"), // 2pm EDT on May 10, 2025
+    ];
+    const randomIndex = Math.floor(Math.random() * dates.length);
+    return dates[randomIndex];
   }
 
   // Function to detect changes between old and new votes data
@@ -319,12 +330,28 @@ export default function VoteTracker() {
           created_at: change.created_at || new Date(),
         }));
 
+        // Log timestamps for debugging
+        console.log(
+          "Loaded timestamps from database:",
+          sanitizedData
+            .slice(0, 3)
+            .map((item) => new Date(item.timestamp).toISOString())
+        );
+
         // Sort by timestamp (newest first)
         sanitizedData.sort((a, b) => {
           const dateA = new Date(a.timestamp);
           const dateB = new Date(b.timestamp);
           return dateB - dateA;
         });
+
+        console.log(
+          "Sorted timestamps (first 3):",
+          sanitizedData.slice(0, 3).map((item) => ({
+            timestamp: new Date(item.timestamp).toISOString(),
+            voterAddress: item.voterAddress,
+          }))
+        );
 
         setChangeLog(sanitizedData);
 
@@ -385,6 +412,14 @@ export default function VoteTracker() {
       // Store these initial votes as "new" votes
       try {
         await axios.post("/api/votes", { changes: initialChanges });
+
+        // Sort by timestamp before setting state
+        initialChanges.sort((a, b) => {
+          const dateA = new Date(a.timestamp);
+          const dateB = new Date(b.timestamp);
+          return dateB - dateA; // Newest first
+        });
+
         setChangeLog(initialChanges);
 
         // Extract voter addresses to resolve ENS names
@@ -405,7 +440,16 @@ export default function VoteTracker() {
       if (changes.length > 0 && changes.some((c) => c.hasChanges)) {
         try {
           await axios.post("/api/votes", { changes });
-          setChangeLog((prevLog) => [...changes, ...prevLog]);
+
+          // Combine new changes with existing log and sort by timestamp
+          setChangeLog((prevLog) => {
+            const combinedLog = [...changes, ...prevLog];
+            return combinedLog.sort((a, b) => {
+              const dateA = new Date(a.timestamp);
+              const dateB = new Date(b.timestamp);
+              return dateB - dateA; // Newest first
+            });
+          });
 
           // Extract voter addresses to resolve ENS names
           const addresses = changes.map((change) => change.voterAddress);
@@ -443,20 +487,29 @@ export default function VoteTracker() {
 
   // Function to get filtered changes
   const getFilteredChanges = () => {
+    let filteredChanges = [];
     if (filterType === "all") {
-      return changeLog;
+      filteredChanges = changeLog;
     } else if (filterType === "new") {
-      return changeLog.filter((change) => change.type === "new");
+      filteredChanges = changeLog.filter((change) => change.type === "new");
     } else if (filterType === "changed") {
-      return changeLog.filter(
+      filteredChanges = changeLog.filter(
         (change) => change.type === "change" && change.hasChanges === true
       );
     } else if (filterType === "unchanged") {
-      return changeLog.filter(
+      filteredChanges = changeLog.filter(
         (change) => change.type === "change" && change.hasChanges === false
       );
+    } else {
+      filteredChanges = changeLog;
     }
-    return changeLog;
+
+    // The changeLog is already sorted by timestamp, but we'll sort again to be safe
+    return filteredChanges.sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return dateB - dateA; // Newest first
+    });
   };
 
   return (

@@ -45,7 +45,12 @@ async function storeCSVData(csvData, changes) {
           .from("vote_changes")
           .insert(
             actualChanges.map((change) => ({
-              ...change,
+              type: change.type,
+              voter_address: change.voterAddress,
+              old_ranking: change.oldRanking,
+              new_ranking: change.newRanking,
+              voting_power: change.votingPower,
+              timestamp: change.timestamp,
               created_at: new Date().toISOString(),
             }))
           );
