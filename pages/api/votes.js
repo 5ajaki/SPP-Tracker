@@ -1,5 +1,6 @@
 // API endpoint to fetch votes data from ENS DAO
 import axios from "axios";
+import { parse } from "csv-parse/sync";
 import { supabase } from "../../lib/supabaseClient";
 
 // Configure axios with retry logic
@@ -21,78 +22,167 @@ const retryRequest = async (fn, retries = 3, delay = 1000) => {
   }
 };
 
-// Store CSV data in Supabase
-async function storeCSVData(csvData, changes) {
+// Process CSV data and update Supabase
+async function processVotesData(csvData) {
   try {
-    // Only store CSV and changes if we have actual changes
-    if (
-      changes &&
-      changes.length > 0 &&
-      changes.some((change) => change.hasChanges)
-    ) {
-      // Log timestamps before storing
-      console.log(
-        "Storing changes with timestamps:",
-        changes.slice(0, 3).map((c) => ({
-          type: c.type,
-          voter: c.voterAddress,
-          timestamp: c.timestamp
-            ? new Date(c.timestamp).toISOString()
-            : "missing",
-        }))
-      );
+    // Parse CSV
+    const records = parse(csvData, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    });
 
-      // Store the CSV backup
+    console.log(`Parsed ${records.length} records from the CSV data`);
+
+    // Get existing votes from the database
+    const { data: existingVotes, error: fetchError } = await supabase
+      .from("votes")
+      .select("voter_address, top_picks, vote_date")
+      .order("vote_date", { ascending: false });
+
+    if (fetchError) throw fetchError;
+
+    console.log(
+      `Found ${existingVotes?.length || 0} existing votes in the database`
+    );
+
+    // Create a map of existing votes for easier lookup
+    // Use only the most recent vote for each address to check for changes
+    const latestVotesMap = {};
+    if (existingVotes) {
+      // Group by voter_address and only keep the most recent vote
+      existingVotes.forEach((vote) => {
+        const address = vote.voter_address.toLowerCase();
+        if (
+          !latestVotesMap[address] ||
+          new Date(vote.vote_date) > new Date(latestVotesMap[address].vote_date)
+        ) {
+          latestVotesMap[address] = vote;
+        }
+      });
+    }
+
+    // Process records for database updates
+    const voteEvents = [];
+    let newVotes = 0;
+    let changedVotes = 0;
+
+    for (const record of records) {
+      const voterAddress = record["Voter Address"]?.toLowerCase();
+      if (!voterAddress) continue;
+
+      // Parse choice ranking
+      const choiceRanking = record["Choice Ranking"]
+        ? record["Choice Ranking"].split(",").map((item) => item.trim())
+        : [];
+
+      // Calculate the timestamp (use current time as we detect new/changed votes)
       const timestamp = new Date().toISOString();
-      const { data: csvBackup, error: csvError } = await supabase.storage
-        .from("vote-data")
-        .upload(`backups/${timestamp}.csv`, csvData);
 
-      if (csvError) throw csvError;
+      // Check if this is a new voter or an update to an existing one
+      if (latestVotesMap[voterAddress]) {
+        // This is an existing voter, check if the vote has changed
+        const oldVote = latestVotesMap[voterAddress];
+        const oldRanking =
+          typeof oldVote.top_picks === "string"
+            ? JSON.parse(oldVote.top_picks)
+            : oldVote.top_picks;
 
-      // Store only the changes that actually changed
-      const actualChanges = changes.filter((change) => change.hasChanges);
-      if (actualChanges.length > 0) {
-        const recordsToInsert = actualChanges.map((change) => {
-          // Ensure we're using the timestamp from the source data
-          const timestamp = change.timestamp
-            ? new Date(change.timestamp).toISOString()
-            : new Date().toISOString();
+        // Only create change events if the ranking has changed
+        let hasChanged = false;
 
-          return {
-            type: change.type,
-            voter_address: change.voterAddress,
-            old_ranking: change.oldRanking,
-            new_ranking: change.newRanking,
-            voting_power: change.votingPower,
-            timestamp: timestamp,
+        if (choiceRanking.length !== oldRanking.length) {
+          hasChanged = true;
+        } else {
+          for (let i = 0; i < choiceRanking.length; i++) {
+            if (choiceRanking[i] !== oldRanking[i]) {
+              hasChanged = true;
+              break;
+            }
+          }
+        }
+
+        if (hasChanged) {
+          console.log(`Detected changed vote from address: ${voterAddress}`);
+          changedVotes++;
+
+          // Store the change event
+          voteEvents.push({
+            type: "change",
+            voter_address: voterAddress,
+            old_ranking: oldRanking,
+            new_ranking: choiceRanking,
+            voting_power: parseFloat(record["Voting Power"] || "0"),
+            timestamp,
             created_at: new Date().toISOString(),
-          };
+          });
+
+          // Insert a new vote record - DO NOT update the old vote
+          await supabase.from("votes").insert({
+            voter_address: voterAddress,
+            voting_power: parseFloat(record["Voting Power"] || "0"),
+            top_picks: JSON.stringify(choiceRanking),
+            vote_date: timestamp, // Use the current timestamp for the new vote
+          });
+        }
+      } else {
+        // This is a new voter
+        console.log(`Detected new vote from address: ${voterAddress}`);
+        newVotes++;
+
+        // Store the change event
+        voteEvents.push({
+          type: "new",
+          voter_address: voterAddress,
+          old_ranking: [],
+          new_ranking: choiceRanking,
+          voting_power: parseFloat(record["Voting Power"] || "0"),
+          timestamp,
+          created_at: new Date().toISOString(),
         });
 
-        console.log(
-          `Inserting ${recordsToInsert.length} records into Supabase`
-        );
-
-        const { data: changeData, error: changeError } = await supabase
-          .from("vote_changes")
-          .insert(recordsToInsert);
-
-        if (changeError) throw changeError;
-
-        console.log("Successfully stored changes in Supabase");
+        // Insert the new vote in the votes table
+        await supabase.from("votes").insert({
+          voter_address: voterAddress,
+          voting_power: parseFloat(record["Voting Power"] || "0"),
+          top_picks: JSON.stringify(choiceRanking),
+          vote_date: timestamp, // Use the current timestamp for the new vote
+        });
       }
     }
 
-    return true;
+    console.log(
+      `Processing complete. Found ${newVotes} new votes and ${changedVotes} changed votes.`
+    );
+
+    // If we have change events, insert them into the vote_changes table
+    if (voteEvents.length > 0) {
+      console.log(
+        `Inserting ${voteEvents.length} vote events into the vote_changes table`
+      );
+      const { error: insertError } = await supabase
+        .from("vote_changes")
+        .insert(voteEvents);
+
+      if (insertError) throw insertError;
+    }
+
+    return {
+      success: true,
+      changes: voteEvents.length,
+      new_votes: newVotes,
+      changed_votes: changedVotes,
+    };
   } catch (error) {
-    console.error("Error storing data in Supabase:", error);
-    return false;
+    console.error("Error processing vote data:", error);
+    return { success: false, error: error.message };
   }
 }
 
 export default async function handler(req, res) {
   try {
+    console.log("Fetching latest votes from ENS DAO...");
+
     // Fetch data with retry logic
     const response = await retryRequest(() =>
       axiosWithRetry.get(
@@ -112,11 +202,24 @@ export default async function handler(req, res) {
       )
     );
 
-    // If changes are provided in the request body, store them along with the CSV
-    const changes = req.body?.changes;
-    await storeCSVData(response.data, changes);
+    console.log("Successfully retrieved CSV data. Processing votes...");
 
-    res.status(200).send(response.data);
+    // Process the CSV data and update the database
+    const result = await processVotesData(response.data);
+
+    // Store the CSV backup
+    const timestamp = new Date().toISOString();
+    await supabase.storage
+      .from("vote-data")
+      .upload(`backups/${timestamp}.csv`, response.data);
+
+    res.status(200).json({
+      success: true,
+      message: `Processed vote data with ${
+        result.new_votes || 0
+      } new votes and ${result.changed_votes || 0} changed votes`,
+      data: response.data,
+    });
   } catch (error) {
     console.error("Error fetching votes:", error);
 
