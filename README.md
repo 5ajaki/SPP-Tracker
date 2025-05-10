@@ -90,3 +90,5 @@ This application can be easily deployed to Vercel:
 - The 60-second auto-check will work in the deployed Vercel app as long as the browser tab is open
 - Historical changes are loaded when a user first visits the site
 - All changes are persisted in the database, even when no users are actively viewing the site
+
+Spence
