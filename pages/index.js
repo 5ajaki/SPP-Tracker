@@ -11,7 +11,8 @@ export default function Home() {
   const [lastRefresh, setLastRefresh] = useState(null);
   const [filter, setFilter] = useState("all"); // 'all', 'new', 'change'
   const [isSeedingData, setIsSeedingData] = useState(false);
-  const [isResolvingENS, setIsResolvingENS] = useState(false);
+  const [showHighPower, setShowHighPower] = useState(true); // Default to true
+  const [expandAll, setExpandAll] = useState(false);
 
   // Load vote events on page load
   useEffect(() => {
@@ -24,7 +25,18 @@ export default function Home() {
   // Refresh votes on filter change
   useEffect(() => {
     fetchVoteEvents();
-  }, [filter]);
+  }, [filter, showHighPower]);
+
+  // Handle expand all toggle
+  useEffect(() => {
+    // Update expanded state of all cards when expandAll changes
+    setVoteEvents((prev) =>
+      prev.map((event) => ({
+        ...event,
+        isExpanded: expandAll,
+      }))
+    );
+  }, [expandAll]);
 
   // Fetch vote events from the database
   const fetchVoteEvents = async () => {
@@ -34,15 +46,22 @@ export default function Home() {
       let query = supabase
         .from("voter_events")
         .select("*")
-        .order("discovered_at", { ascending: false })
-        .limit(50);
+        .order("discovered_at", { ascending: false });
 
-      // Apply filter
+      // Apply type filter
       if (filter === "new") {
         query = query.eq("event_type", "new");
       } else if (filter === "change") {
         query = query.eq("event_type", "change");
       }
+
+      // Apply voting power filter
+      if (showHighPower) {
+        query = query.gte("voting_power", 100);
+      }
+
+      // Apply limit
+      query = query.limit(50);
 
       const { data, error } = await query;
 
@@ -51,12 +70,34 @@ export default function Home() {
         return;
       }
 
-      setVoteEvents(data || []);
+      // Initialize each event with an isExpanded property
+      setVoteEvents(
+        (data || []).map((event) => ({
+          ...event,
+          isExpanded: expandAll,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching vote events:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Toggle expansion state of a specific card
+  const toggleCardExpansion = (voteEventId) => {
+    setVoteEvents((prev) =>
+      prev.map((event) =>
+        event.vote_event_id === voteEventId
+          ? { ...event, isExpanded: !event.isExpanded }
+          : event
+      )
+    );
+  };
+
+  // Toggle expand all
+  const toggleExpandAll = () => {
+    setExpandAll(!expandAll);
   };
 
   // Call the API to refresh votes
@@ -99,56 +140,12 @@ export default function Home() {
     }
   };
 
-  // Resolve missing ENS names
-  const resolveENSNames = async () => {
-    try {
-      setIsResolvingENS(true);
-      const response = await axios.get("/api/resolve-missing-ens");
-
-      if (response.status === 200) {
-        const { resolved, remaining } = response.data;
-        if (resolved > 0) {
-          // Refresh the display if any names were resolved
-          fetchVoteEvents();
-          alert(
-            `Resolved ${resolved} ENS names. ${remaining} addresses remaining.`
-          );
-        } else {
-          alert("No new ENS names were resolved.");
-        }
-      }
-    } catch (error) {
-      console.error("Error resolving ENS names:", error);
-      alert(
-        "Error resolving ENS names: " +
-          (error.response?.data?.message || error.message)
-      );
-    } finally {
-      setIsResolvingENS(false);
-    }
-  };
-
   return (
     <div className="container">
       <header>
         <h1>ENS DAO Service Provider Vote Tracker</h1>
 
         <div className="refresh-section">
-          <button
-            className="refresh-button"
-            onClick={refreshVotes}
-            disabled={loading || isSeedingData || isResolvingENS}
-          >
-            Refresh Votes
-          </button>
-          <button
-            className="ens-button"
-            onClick={resolveENSNames}
-            disabled={loading || isSeedingData || isResolvingENS}
-            title="Attempt to resolve ENS names for addresses"
-          >
-            {isResolvingENS ? "Resolving Names..." : "Resolve ENS Names"}
-          </button>
           {lastRefresh && (
             <p className="last-updated">
               Last updated:{" "}
@@ -157,26 +154,61 @@ export default function Home() {
           )}
         </div>
 
-        <div className="filter-section">
-          <span>Filter: </span>
-          <div className="filter-buttons">
-            <button
-              className={filter === "all" ? "active" : ""}
-              onClick={() => setFilter("all")}
-            >
-              All Events
-            </button>
-            <button
-              className={filter === "new" ? "active" : ""}
-              onClick={() => setFilter("new")}
-            >
-              New Votes
-            </button>
-            <button
-              className={filter === "change" ? "active" : ""}
-              onClick={() => setFilter("change")}
-            >
-              Changed Votes
+        <div className="filter-controls">
+          <div className="filter-section">
+            <span>Filter: </span>
+            <div className="filter-buttons">
+              <button
+                className={filter === "all" ? "active" : ""}
+                onClick={() => setFilter("all")}
+              >
+                All Events
+              </button>
+              <button
+                className={filter === "new" ? "active" : ""}
+                onClick={() => setFilter("new")}
+              >
+                New Votes
+              </button>
+              <button
+                className={filter === "change" ? "active" : ""}
+                onClick={() => setFilter("change")}
+              >
+                Changed Votes
+              </button>
+            </div>
+          </div>
+
+          <div className="color-legend">
+            <div className="legend-title">Color Key:</div>
+            <div className="legend-items">
+              <div className="legend-item">
+                <span className="legend-color new-color"></span>
+                <span className="legend-label">New Votes</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color change-color"></span>
+                <span className="legend-label">Changed Votes</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color seed-color"></span>
+                <span className="legend-label">Seed Data</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="filter-options">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={showHighPower}
+                onChange={() => setShowHighPower(!showHighPower)}
+              />
+              Only show votes over 100 $ENS
+            </label>
+
+            <button className="expand-all-button" onClick={toggleExpandAll}>
+              {expandAll ? "Collapse All" : "Expand All"}
             </button>
           </div>
         </div>
@@ -199,7 +231,12 @@ export default function Home() {
         ) : (
           <div className="vote-events">
             {voteEvents.map((event) => (
-              <VoteEventCard key={event.vote_event_id} event={event} />
+              <VoteEventCard
+                key={event.vote_event_id}
+                event={event}
+                isExpanded={event.isExpanded}
+                toggleExpansion={() => toggleCardExpansion(event.vote_event_id)}
+              />
             ))}
           </div>
         )}
@@ -209,7 +246,7 @@ export default function Home() {
 }
 
 // Vote Event Card Component
-function VoteEventCard({ event }) {
+function VoteEventCard({ event, isExpanded, toggleExpansion }) {
   const [ensName, setEnsName] = useState(event.ens_name || null);
   const [loadingEns, setLoadingEns] = useState(false);
 
@@ -246,11 +283,8 @@ function VoteEventCard({ event }) {
   const formatVotingPower = (power) => {
     if (!power) return "0";
     const num = parseFloat(power);
-    if (num >= 1000)
-      return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    if (num >= 1)
-      return num.toLocaleString(undefined, { maximumFractionDigits: 4 });
-    return num.toLocaleString(undefined, { maximumSignificantDigits: 4 });
+    // Round to whole numbers, never show decimals
+    return Math.round(num).toLocaleString();
   };
 
   // Format timestamp
@@ -348,57 +382,71 @@ function VoteEventCard({ event }) {
     <div
       className={`vote-card ${
         event.event_type === "new" ? "initial-vote" : "changed-vote"
-      } ${event.is_seed ? "seed-data" : ""}`}
+      } ${event.is_seed ? "seed-data" : ""} ${
+        isExpanded ? "expanded" : "collapsed"
+      }`}
     >
-      <div className="card-header">
+      <div className="card-header" onClick={toggleExpansion}>
         <div className="voter-info">
-          <span className="voter-address">{displayAddress()}</span>
-          <span className="voting-power">
-            {formatVotingPower(event.voting_power)} votes
-          </span>
+          <div className="voter-details">
+            <span className="voter-address">{displayAddress()}</span>
+            <span
+              className="voting-power-pill"
+              title={`${formatVotingPower(event.voting_power)} voting power`}
+            >
+              {formatVotingPower(event.voting_power)}
+            </span>
+          </div>
         </div>
-        <div className="timestamp">{formatTimestamp(event.discovered_at)}</div>
+        <div className="card-actions">
+          <div className="timestamp">
+            {formatTimestamp(event.discovered_at)}
+          </div>
+          <button className="expand-toggle">{isExpanded ? "▲" : "▼"}</button>
+        </div>
       </div>
 
-      <div className="card-content">
-        {event.event_type === "new" ? (
-          <>
-            <div className="vote-section no-previous-vote">
-              <h3>No Previous Vote</h3>
-              <div className="vote-description">First time voter</div>
-            </div>
+      {isExpanded && (
+        <div className="card-content">
+          {event.event_type === "new" ? (
+            <>
+              <div className="vote-section no-previous-vote">
+                <h3>No Previous Vote</h3>
+                <div className="vote-description">First time voter</div>
+              </div>
 
-            <div className="vote-section initial-vote">
-              <h3>Initial Vote</h3>
-              <ol className="ranking-list">
-                {parseRanking(event.choice_ranking).map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ol>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="vote-section previous-vote">
-              <h3>Previous Vote</h3>
-              <ol className="ranking-list">
-                {parseRanking(event.previous_ranking).map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ol>
-            </div>
+              <div className="vote-section initial-vote">
+                <h3>Initial Vote</h3>
+                <ol className="ranking-list">
+                  {parseRanking(event.choice_ranking).map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ol>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="vote-section previous-vote">
+                <h3>Previous Vote</h3>
+                <ol className="ranking-list">
+                  {parseRanking(event.previous_ranking).map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ol>
+              </div>
 
-            <div className="vote-section new-vote">
-              <h3>New Vote</h3>
-              <ol className="ranking-list">
-                {parseRanking(event.choice_ranking).map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ol>
-            </div>
-          </>
-        )}
-      </div>
+              <div className="vote-section new-vote">
+                <h3>New Vote</h3>
+                <ol className="ranking-list">
+                  {parseRanking(event.choice_ranking).map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ol>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
