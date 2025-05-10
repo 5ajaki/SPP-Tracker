@@ -283,10 +283,14 @@ export default function VoteTracker() {
         // Sanitize the data to ensure all properties exist
         const sanitizedData = data.map((change) => ({
           type: change.type || "change",
-          voterAddress: change.voterAddress || "",
-          oldRanking: Array.isArray(change.oldRanking) ? change.oldRanking : [],
-          newRanking: Array.isArray(change.newRanking) ? change.newRanking : [],
-          votingPower: change.votingPower || 0,
+          voterAddress: change.voter_address || change.voterAddress || "",
+          oldRanking: Array.isArray(change.old_ranking || change.oldRanking)
+            ? change.old_ranking || change.oldRanking
+            : [],
+          newRanking: Array.isArray(change.new_ranking || change.newRanking)
+            ? change.new_ranking || change.newRanking
+            : [],
+          votingPower: change.voting_power || change.votingPower || 0,
           timestamp: change.timestamp || new Date(),
           hasChanges:
             change.type === "new" ? true : change.hasChanges !== false,
@@ -310,14 +314,19 @@ export default function VoteTracker() {
         if (addresses.length > 0) {
           resolveEnsNames(addresses);
         }
+
+        // Return whether we have any historical data
+        return sanitizedData.length > 0;
       }
+      return false;
     } catch (error) {
       console.error("Error loading historical changes:", error);
+      return false;
     }
   }
 
   // Modified updateChanges function to store changes
-  async function updateChanges() {
+  async function updateChanges(hasExistingData = false) {
     const newVotesData = await fetchVotesData();
 
     if (!newVotesData) {
@@ -325,8 +334,8 @@ export default function VoteTracker() {
       return;
     }
 
-    // If this is the first fetch, just store the data
-    if (Object.keys(previousVotesData).length === 0) {
+    // If this is the first fetch and we don't have historical data
+    if (Object.keys(previousVotesData).length === 0 && !hasExistingData) {
       // Create "new votes" entries for every vote in the first fetch
       const initialChanges = Object.values(newVotesData).map((voteData) => {
         const ranking = voteData.choiceRanking || [];
@@ -371,7 +380,7 @@ export default function VoteTracker() {
       const changes = detectChanges(mostRecentVotesData, newVotesData);
 
       // If there are changes, send them to the API
-      if (changes.length > 0) {
+      if (changes.length > 0 && changes.some((c) => c.hasChanges)) {
         try {
           await axios.post("/api/votes", { changes });
           setChangeLog((prevLog) => [...changes, ...prevLog]);
@@ -395,11 +404,17 @@ export default function VoteTracker() {
 
   // Set up initial fetching and periodic updates
   useEffect(() => {
-    loadHistoricalChanges(); // Load historical changes when component mounts
-    updateChanges();
+    // Flag to track if we've loaded historical data
+    let hasHistoricalData = false;
+
+    // Load historical changes first
+    loadHistoricalChanges().then((historyResult) => {
+      hasHistoricalData = historyResult;
+      updateChanges(hasHistoricalData);
+    });
 
     // Set up automatic refresh every 60 seconds
-    const interval = setInterval(updateChanges, 60000);
+    const interval = setInterval(() => updateChanges(true), 60000);
 
     return () => clearInterval(interval);
   }, []);
