@@ -30,6 +30,18 @@ async function storeCSVData(csvData, changes) {
       changes.length > 0 &&
       changes.some((change) => change.hasChanges)
     ) {
+      // Log timestamps before storing
+      console.log(
+        "Storing changes with timestamps:",
+        changes.slice(0, 3).map((c) => ({
+          type: c.type,
+          voter: c.voterAddress,
+          timestamp: c.timestamp
+            ? new Date(c.timestamp).toISOString()
+            : "missing",
+        }))
+      );
+
       // Store the CSV backup
       const timestamp = new Date().toISOString();
       const { data: csvBackup, error: csvError } = await supabase.storage
@@ -41,21 +53,34 @@ async function storeCSVData(csvData, changes) {
       // Store only the changes that actually changed
       const actualChanges = changes.filter((change) => change.hasChanges);
       if (actualChanges.length > 0) {
+        const recordsToInsert = actualChanges.map((change) => {
+          // Ensure we're using the timestamp from the source data
+          const timestamp = change.timestamp
+            ? new Date(change.timestamp).toISOString()
+            : new Date().toISOString();
+
+          return {
+            type: change.type,
+            voter_address: change.voterAddress,
+            old_ranking: change.oldRanking,
+            new_ranking: change.newRanking,
+            voting_power: change.votingPower,
+            timestamp: timestamp,
+            created_at: new Date().toISOString(),
+          };
+        });
+
+        console.log(
+          `Inserting ${recordsToInsert.length} records into Supabase`
+        );
+
         const { data: changeData, error: changeError } = await supabase
           .from("vote_changes")
-          .insert(
-            actualChanges.map((change) => ({
-              type: change.type,
-              voter_address: change.voterAddress,
-              old_ranking: change.oldRanking,
-              new_ranking: change.newRanking,
-              voting_power: change.votingPower,
-              timestamp: change.timestamp,
-              created_at: new Date().toISOString(),
-            }))
-          );
+          .insert(recordsToInsert);
 
         if (changeError) throw changeError;
+
+        console.log("Successfully stored changes in Supabase");
       }
     }
 

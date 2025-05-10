@@ -87,7 +87,7 @@ export default function VoteTracker() {
             address: voterAddress,
             votingPower: votingPower,
             choiceRanking: choiceRanking,
-            timestamp: getRandomTimestamp(),
+            timestamp: new Date(), // Default timestamp - will be updated with CSV data if available
           };
         }
       }
@@ -97,17 +97,6 @@ export default function VoteTracker() {
       console.error("Error fetching votes data:", error);
       return null;
     }
-  }
-
-  // Function to get a random timestamp between May 8-10, 2025 at 2pm EDT
-  function getRandomTimestamp() {
-    const dates = [
-      new Date("2025-05-08T18:00:00.000Z"), // 2pm EDT on May 8, 2025
-      new Date("2025-05-09T18:00:00.000Z"), // 2pm EDT on May 9, 2025
-      new Date("2025-05-10T18:00:00.000Z"), // 2pm EDT on May 10, 2025
-    ];
-    const randomIndex = Math.floor(Math.random() * dates.length);
-    return dates[randomIndex];
   }
 
   // Function to detect changes between old and new votes data
@@ -250,8 +239,8 @@ export default function VoteTracker() {
     const date = new Date(timestamp);
     const now = new Date();
 
-    // For our specific use case with dates in 2025, always use the full date format
-    if (date.getFullYear() === 2025) {
+    // For dates in 2024 or 2025, always use the full date format
+    if (date.getFullYear() >= 2024) {
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
@@ -304,6 +293,8 @@ export default function VoteTracker() {
   // Function to load historical changes
   async function loadHistoricalChanges() {
     try {
+      console.log("Loading historical data from Supabase...");
+
       const { data, error } = await supabase
         .from("vote_changes")
         .select("*")
@@ -313,6 +304,20 @@ export default function VoteTracker() {
       if (error) throw error;
 
       if (data && Array.isArray(data)) {
+        console.log(`Got ${data.length} vote records from database`);
+
+        // For debugging - log a few timestamp examples from raw data
+        if (data.length > 0) {
+          console.log(
+            "Sample database timestamps (raw):",
+            data.slice(0, 3).map((item) => ({
+              timestamp: item.timestamp,
+              created_at: item.created_at,
+              voter: item.voter_address,
+            }))
+          );
+        }
+
         // Sanitize the data to ensure all properties exist
         const sanitizedData = data.map((change) => ({
           type: change.type || "change",
@@ -324,7 +329,7 @@ export default function VoteTracker() {
             ? change.new_ranking || change.newRanking
             : [],
           votingPower: change.voting_power || change.votingPower || 0,
-          timestamp: change.timestamp || new Date(),
+          timestamp: change.timestamp || change.created_at || new Date(),
           hasChanges:
             change.type === "new" ? true : change.hasChanges !== false,
           created_at: change.created_at || new Date(),
@@ -332,17 +337,40 @@ export default function VoteTracker() {
 
         // Log timestamps for debugging
         console.log(
-          "Loaded timestamps from database:",
-          sanitizedData
+          "Timestamps after sanitization:",
+          sanitizedData.slice(0, 3).map((item) => ({
+            timestamp: new Date(item.timestamp).toISOString(),
+            voterAddress: item.voterAddress,
+            type: item.type,
+          }))
+        );
+
+        // Build voter timestamp mapping for reference
+        const voterTimestamps = {};
+        sanitizedData.forEach((item) => {
+          if (!voterTimestamps[item.voterAddress]) {
+            voterTimestamps[item.voterAddress] = [];
+          }
+          voterTimestamps[item.voterAddress].push(
+            new Date(item.timestamp).toISOString()
+          );
+        });
+
+        console.log(
+          "Unique voters with their timestamps:",
+          Object.keys(voterTimestamps)
             .slice(0, 3)
-            .map((item) => new Date(item.timestamp).toISOString())
+            .map((voter) => ({
+              voter,
+              timestamps: voterTimestamps[voter].slice(0, 2), // Show first 2 timestamps
+            }))
         );
 
         // Sort by timestamp (newest first)
         sanitizedData.sort((a, b) => {
           const dateA = new Date(a.timestamp);
           const dateB = new Date(b.timestamp);
-          return dateB - dateA;
+          return dateB - dateA; // This sorts in descending order (newest first)
         });
 
         console.log(
@@ -350,6 +378,7 @@ export default function VoteTracker() {
           sanitizedData.slice(0, 3).map((item) => ({
             timestamp: new Date(item.timestamp).toISOString(),
             voterAddress: item.voterAddress,
+            type: item.type,
           }))
         );
 
@@ -383,9 +412,37 @@ export default function VoteTracker() {
       return;
     }
 
+    // If we have historical data, we need to preserve the timestamps
+    if (hasExistingData && changeLog.length > 0) {
+      // Create a mapping of voter addresses to their timestamps from changeLog
+      const addressToTimestamp = {};
+
+      // We want to use the most recent timestamp for each voter
+      changeLog.forEach((change) => {
+        if (
+          !addressToTimestamp[change.voterAddress] ||
+          new Date(change.timestamp) >
+            new Date(addressToTimestamp[change.voterAddress])
+        ) {
+          addressToTimestamp[change.voterAddress] = change.timestamp;
+        }
+      });
+
+      // Apply the preserved timestamps to the new votes data
+      Object.keys(newVotesData).forEach((address) => {
+        if (addressToTimestamp[address]) {
+          newVotesData[address].timestamp = new Date(
+            addressToTimestamp[address]
+          );
+        }
+        // New votes will keep their current timestamp (new Date())
+      });
+    }
+
     // If this is the first fetch and we don't have historical data
     if (Object.keys(previousVotesData).length === 0 && !hasExistingData) {
       // Create "new votes" entries for every vote in the first fetch
+      // Each will have its current timestamp
       const initialChanges = Object.values(newVotesData).map((voteData) => {
         const ranking = voteData.choiceRanking || [];
         const noneBelowIndex = Array.isArray(ranking)
@@ -409,17 +466,16 @@ export default function VoteTracker() {
         };
       });
 
+      // Sort by timestamp before setting state
+      initialChanges.sort((a, b) => {
+        const dateA = new Date(a.timestamp);
+        const dateB = new Date(b.timestamp);
+        return dateB - dateA; // Newest first
+      });
+
       // Store these initial votes as "new" votes
       try {
         await axios.post("/api/votes", { changes: initialChanges });
-
-        // Sort by timestamp before setting state
-        initialChanges.sort((a, b) => {
-          const dateA = new Date(a.timestamp);
-          const dateB = new Date(b.timestamp);
-          return dateB - dateA; // Newest first
-        });
-
         setChangeLog(initialChanges);
 
         // Extract voter addresses to resolve ENS names
