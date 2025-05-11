@@ -128,6 +128,7 @@ header h1 {
   font-size: 14px;
   font-weight: 500;
   min-width: 120px;
+  z-index: 10;
 }
 
 .theme-icon {
@@ -545,6 +546,8 @@ main {
 @media (max-width: 768px) {
   .card-content {
     flex-direction: column;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .vote-section {
@@ -586,6 +589,161 @@ main {
   .checkbox-label {
     width: 100%;
     justify-content: center;
+  }
+
+  .theme-toggle {
+    position: relative;
+    top: 0;
+    right: 0;
+    margin: 0 auto 15px auto;
+    width: auto;
+  }
+
+  header h1 {
+    margin-top: 15px;
+    font-size: 28px;
+    line-height: 1.3;
+    padding: 0 15px;
+  }
+
+  .ranking-list {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .vote-card {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .timestamp {
+    white-space: nowrap;
+    padding: 3px 8px;
+    font-size: 13px;
+  }
+
+  .expand-toggle {
+    padding: 8px;
+    margin-left: 5px;
+  }
+
+  .filter-options {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .eth-address,
+  .ens-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .last-updated {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Make ballot items wrap properly */
+  .ranking-list li {
+    word-break: break-word;
+    white-space: normal;
+    padding: 10px 12px;
+    width: 100%;
+  }
+
+  /* Fix color key wrapping */
+  .color-legend {
+    flex-direction: column;
+    padding: 12px;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .legend-items {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Fix cached time display */
+  .cached-indicator {
+    display: inline-block;
+    margin-top: 5px;
+    width: auto;
+  }
+
+  /* Additional mobile fixes for content overflow */
+  .card-content {
+    padding: 15px;
+    width: 100%;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra adjustments for very small screens */
+  .card-header {
+    padding: 12px 15px;
+  }
+
+  .voter-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .voting-power-pill {
+    display: inline-flex;
+    margin-left: 0;
+  }
+
+  .timestamp {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+
+  /* Fix mobile filter controls */
+  .filter-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .filter-buttons button {
+    margin-bottom: 8px;
+  }
+
+  /* Optimize expand toggle on mobile */
+  .expand-toggle {
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  /* Ensure vote sections are properly sized */
+  .vote-section {
+    padding: 10px 0;
+  }
+
+  /* Fix vote section headers */
+  .vote-section h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  /* Ensure no text truncation in cards */
+  .ranking-list li {
+    padding: 10px;
+    font-size: 14px;
   }
 }
 
