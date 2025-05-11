@@ -216,8 +216,8 @@ export default function Home() {
   return (
     <div className="container">
       <header>
-        <h1>ENS DAO Service Provider Vote Tracker</h1>
         <ThemeToggle />
+        <h1>ENS DAO Service Provider Vote Tracker</h1>
 
         <div className="refresh-section">
           {lastRefresh && (
@@ -271,16 +271,8 @@ export default function Home() {
                 <span className="legend-label">Changed Votes</span>
               </div>
               <div className="legend-item">
-                <span className="legend-color up-color"></span>
-                <span className="legend-label">Moved Up ↑</span>
-              </div>
-              <div className="legend-item">
-                <span className="legend-color down-color"></span>
-                <span className="legend-label">Moved Down ↓</span>
-              </div>
-              <div className="legend-item">
                 <span className="legend-color seed-color"></span>
-                <span className="legend-label">Seed Data</span>
+                <span className="legend-label">Seeded Data</span>
               </div>
             </div>
           </div>

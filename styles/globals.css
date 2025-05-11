@@ -100,6 +100,9 @@ header {
   margin-bottom: 30px;
   text-align: center;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 header h1 {
@@ -109,6 +112,7 @@ header h1 {
   font-weight: 700;
   letter-spacing: 0.3px;
   text-shadow: 0 1px 2px rgba(82, 133, 255, 0.2);
+  padding: 0 120px;
 }
 
 .theme-toggle {
@@ -129,6 +133,10 @@ header h1 {
   font-weight: 500;
   min-width: 120px;
   z-index: 10;
+}
+
+.toggle-text {
+  white-space: nowrap;
 }
 
 .theme-icon {
@@ -611,9 +619,7 @@ main {
   }
 
   .theme-toggle {
-    position: relative;
-    top: 0;
-    right: 0;
+    position: static;
     margin: 0 auto 15px auto;
     width: auto;
   }
@@ -624,6 +630,7 @@ main {
     line-height: 1.3;
     padding: 0 15px;
     margin-bottom: 15px;
+    width: 100%;
   }
 
   .ranking-list {
@@ -1139,13 +1146,27 @@ main {
   background-color: #9fa8da;
 }
 
+.legend-color.up-color {
+  background-color: #4caf50;
+}
+
+.legend-color.down-color {
+  background-color: #f44336;
+}
+
+/* Remove rules that hide legend items */
 .legend-color.added-color,
 .legend-color.moved-color,
-.legend-color.removed-color,
+.legend-color.removed-color {
+  display: inline-block;
+}
+
 .legend-item:nth-child(4),
 .legend-item:nth-child(5),
 .legend-item:nth-child(6) {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .legend-label {
@@ -1708,5 +1729,24 @@ main {
   .movement-indicator {
     padding: 1px 4px;
     font-size: 11px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Additional media query for narrower screens */
+  header {
+    flex-direction: column;
+  }
+
+  .theme-toggle {
+    position: static;
+    margin: 0 auto 15px auto;
+    width: fit-content;
+  }
+
+  header h1 {
+    padding: 0 10px;
+    font-size: 26px;
+    margin-top: 0;
   }
 }
