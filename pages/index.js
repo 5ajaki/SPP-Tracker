@@ -16,7 +16,7 @@ export default function Home() {
   const [expandAll, setExpandAll] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 25;
   const [ensNamesMap, setEnsNamesMap] = useState(new Map());
   const [isCachedData, setIsCachedData] = useState(false);
   const [cacheAge, setCacheAge] = useState(null);
@@ -288,7 +288,13 @@ export default function Home() {
               <input
                 type="checkbox"
                 checked={showHighPower}
-                onChange={() => setShowHighPower(!showHighPower)}
+                onChange={() => {
+                  setShowHighPower(!showHighPower);
+                  // Reset to top of list when filter changes
+                  setPage(0);
+                  setVoteEvents([]);
+                  setHasMore(true);
+                }}
               />
               Only show votes over 100 $ENS
             </label>

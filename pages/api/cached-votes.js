@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       filter = "all",
       showHighPower = "true",
       page = "0",
-      pageSize = "10",
+      pageSize = "25",
     } = req.query;
 
     // Convert to appropriate types
