@@ -8,11 +8,15 @@ import { resolveENSName } from "../lib/ensUtils";
 export default function Home() {
   const [voteEvents, setVoteEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [filter, setFilter] = useState("all"); // 'all', 'new', 'change'
   const [isSeedingData, setIsSeedingData] = useState(false);
   const [showHighPower, setShowHighPower] = useState(true); // Default to true
   const [expandAll, setExpandAll] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 10;
 
   // Load vote events on page load
   useEffect(() => {
@@ -24,6 +28,10 @@ export default function Home() {
 
   // Refresh votes on filter change
   useEffect(() => {
+    // Reset pagination when filters change
+    setPage(0);
+    setVoteEvents([]);
+    setHasMore(true);
     fetchVoteEvents();
   }, [filter, showHighPower]);
 
@@ -39,13 +47,20 @@ export default function Home() {
   }, [expandAll]);
 
   // Fetch vote events from the database
-  const fetchVoteEvents = async () => {
+  const fetchVoteEvents = async (loadMore = false) => {
     try {
-      setLoading(true);
+      if (loadMore) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      // If we're loading more, increment the page, otherwise use the current page
+      const currentPage = loadMore ? page + 1 : page;
 
       let query = supabase
         .from("voter_events")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("discovered_at", { ascending: false });
 
       // Apply type filter
@@ -60,28 +75,51 @@ export default function Home() {
         query = query.gte("voting_power", 100);
       }
 
-      // Apply limit
-      query = query.limit(50);
+      // Apply pagination
+      const start = currentPage * PAGE_SIZE;
+      const end = start + PAGE_SIZE - 1;
+      query = query.range(start, end);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) {
         console.error("Error fetching vote events:", error);
         return;
       }
 
+      // Check if we have more items to load
+      setHasMore(count > (currentPage + 1) * PAGE_SIZE);
+
+      // Update the page number if we're loading more
+      if (loadMore) {
+        setPage(currentPage);
+      }
+
       // Initialize each event with an isExpanded property
-      setVoteEvents(
-        (data || []).map((event) => ({
-          ...event,
-          isExpanded: expandAll,
-        }))
-      );
+      const formattedData = (data || []).map((event) => ({
+        ...event,
+        isExpanded: expandAll,
+      }));
+
+      // If loading more, append to existing events, otherwise replace
+      setVoteEvents((prev) => {
+        if (loadMore) {
+          return [...prev, ...formattedData];
+        } else {
+          return formattedData;
+        }
+      });
     } catch (error) {
       console.error("Error fetching vote events:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  // Load more vote events
+  const loadMoreEvents = () => {
+    fetchVoteEvents(true);
   };
 
   // Toggle expansion state of a specific card
@@ -109,6 +147,10 @@ export default function Home() {
       if (response.status === 200) {
         // Only fetch new events if changes were detected
         if (response.data.newEvents > 0) {
+          // Reset pagination and fetch fresh data
+          setPage(0);
+          setVoteEvents([]);
+          setHasMore(true);
           fetchVoteEvents();
         }
       }
@@ -233,7 +275,7 @@ export default function Home() {
       </header>
 
       <main>
-        {loading ? (
+        {loading && voteEvents.length === 0 ? (
           <div className="loading">Loading vote events...</div>
         ) : voteEvents.length === 0 ? (
           <div className="no-data">
@@ -247,16 +289,32 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="vote-events">
-            {voteEvents.map((event) => (
-              <VoteEventCard
-                key={event.vote_event_id}
-                event={event}
-                isExpanded={event.isExpanded}
-                toggleExpansion={() => toggleCardExpansion(event.vote_event_id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="vote-events">
+              {voteEvents.map((event) => (
+                <VoteEventCard
+                  key={event.vote_event_id}
+                  event={event}
+                  isExpanded={event.isExpanded}
+                  toggleExpansion={() =>
+                    toggleCardExpansion(event.vote_event_id)
+                  }
+                />
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="load-more-container">
+                <button
+                  className="load-more-button"
+                  onClick={loadMoreEvents}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? "Loading..." : "Load More Votes"}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

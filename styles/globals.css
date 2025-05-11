@@ -563,3 +563,31 @@ header h1 {
 .legend-label {
   font-size: 14px;
 }
+
+/* Load more button styles */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
+}
+
+.load-more-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+.load-more-button:hover {
+  background-color: #406ad8;
+}
+
+.load-more-button:disabled {
+  background-color: var(--medium-gray);
+  cursor: not-allowed;
+}
