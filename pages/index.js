@@ -271,6 +271,14 @@ export default function Home() {
                 <span className="legend-label">Changed Votes</span>
               </div>
               <div className="legend-item">
+                <span className="legend-color up-color"></span>
+                <span className="legend-label">Moved Up ↑</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color down-color"></span>
+                <span className="legend-label">Moved Down ↓</span>
+              </div>
+              <div className="legend-item">
                 <span className="legend-color seed-color"></span>
                 <span className="legend-label">Seed Data</span>
               </div>
@@ -502,11 +510,19 @@ function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
 
     const changeMap = {};
     const previousItems = new Map();
+    const newItems = new Set(newRankings);
+    const removedItems = new Set();
 
     // Map items to their positions in the previous ranking
     previousRankings.forEach((item, index) => {
       previousItems.set(item, index);
+      if (!newItems.has(item)) {
+        removedItems.add(item);
+      }
     });
+
+    // Calculate added items (to track insertion impact)
+    const addedItems = newRankings.filter((item) => !previousItems.has(item));
 
     // Compare new ranking with previous to identify changes
     newRankings.forEach((item, newIndex) => {
@@ -516,22 +532,26 @@ function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
 
       if (previousIndex === -1) {
         // Item is new
-        changeMap[newIndex] = "added";
+        changeMap[newIndex] = { type: "added" };
       } else if (previousIndex !== newIndex) {
-        // Item moved position
-        changeMap[newIndex] = "moved";
+        // Item moved position - calculate direction and magnitude
+        const positionChange = previousIndex - newIndex;
+        const direction = positionChange > 0 ? "up" : "down";
+        const magnitude = Math.abs(positionChange);
+
+        changeMap[newIndex] = {
+          type: "moved",
+          direction,
+          magnitude,
+          previousPosition: previousIndex + 1, // For display, 1-indexed
+          newPosition: newIndex + 1, // For display, 1-indexed
+        };
       }
-
-      // Remove from previous items to track what's left (removed items)
-      previousItems.delete(item);
     });
-
-    // Any items left in previousItems were removed
-    const removedIndices = Array.from(previousItems.values());
 
     return {
       changed: changeMap,
-      removedIndices,
+      removedItems: Array.from(removedItems),
     };
   };
 
@@ -604,7 +624,8 @@ function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
                       key={index}
                       className={
                         changeAnalysis &&
-                        changeAnalysis.removedIndices.includes(index)
+                        changeAnalysis.removedItems &&
+                        changeAnalysis.removedItems.includes(item)
                           ? "removed-item"
                           : ""
                       }
@@ -623,11 +644,22 @@ function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
                       key={index}
                       className={
                         changeAnalysis && changeAnalysis.changed[index]
-                          ? `changed-item ${changeAnalysis.changed[index]}`
+                          ? `changed-item ${changeAnalysis.changed[index].type}`
                           : ""
                       }
                     >
                       {item}
+                      {changeAnalysis &&
+                        changeAnalysis.changed[index]?.type === "moved" && (
+                          <span
+                            className={`movement-indicator ${changeAnalysis.changed[index].direction}`}
+                          >
+                            {changeAnalysis.changed[index].direction === "up"
+                              ? "↑"
+                              : "↓"}
+                            {changeAnalysis.changed[index].magnitude}
+                          </span>
+                        )}
                     </li>
                   ))}
                 </ol>
