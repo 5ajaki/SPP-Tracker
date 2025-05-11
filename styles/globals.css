@@ -22,6 +22,44 @@
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   --mono-font: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo,
     monospace;
+  --background-color: #f8f9fb;
+  --container-bg: rgba(255, 255, 255, 0.7);
+  --header-color: var(--primary-color);
+  --card-bg: white;
+  --card-header-bg: var(--secondary-color);
+  --card-header-hover-bg: #dce6ff;
+  --card-content-bg: rgba(250, 251, 255, 0.7);
+  --loading-bg: rgba(250, 251, 255, 0.7);
+}
+
+.dark-mode {
+  --primary-color: #82a8ff;
+  --primary-dark: #6191ff;
+  --primary-light: #2c3e63;
+  --secondary-color: #2a394e;
+  --border-color: #3a4a63;
+  --text-color: #f0f0f0;
+  --text-light: #c0c0c0;
+  --light-gray: #3a4355;
+  --medium-gray: #9a9aac;
+  --success-color: #66bb6a;
+  --success-light: rgba(102, 187, 106, 0.2);
+  --warning-color: #ffa726;
+  --warning-light: rgba(255, 167, 38, 0.2);
+  --error-color: #ef5350;
+  --error-light: rgba(239, 83, 80, 0.2);
+  --seed-color: #8c9eff;
+  --seed-light: rgba(140, 158, 255, 0.2);
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --background-color: #151824;
+  --container-bg: rgba(28, 30, 44, 0.9);
+  --header-color: var(--primary-color);
+  --card-bg: #222636;
+  --card-header-bg: #2a304a;
+  --card-header-hover-bg: #344068;
+  --card-content-bg: rgba(42, 46, 66, 0.95);
+  --loading-bg: rgba(42, 46, 66, 0.9);
 }
 
 * {
@@ -34,8 +72,9 @@ html,
 body {
   font-family: var(--font-family);
   color: var(--text-color);
-  background-color: #f8f9fb;
+  background-color: var(--background-color);
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
@@ -52,22 +91,44 @@ button {
   max-width: 1000px;
   margin: 0 auto;
   padding: 24px;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--container-bg);
   min-height: 100vh;
+  transition: background-color 0.3s ease;
 }
 
 header {
   margin-bottom: 30px;
   text-align: center;
+  position: relative;
 }
 
 header h1 {
-  color: var(--primary-color);
+  color: var(--header-color);
   margin-bottom: 22px;
   font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-shadow: 0 1px 2px rgba(82, 133, 255, 0.2);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background-color: rgba(128, 128, 128, 0.15);
 }
 
 main {
@@ -93,7 +154,7 @@ main {
 }
 
 .refresh-button:hover {
-  background-color: #406ad8;
+  background-color: var(--primary-dark);
 }
 
 .refresh-button:disabled {
@@ -121,11 +182,12 @@ main {
 }
 
 .filter-buttons button {
-  background-color: white;
+  background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   padding: 8px 15px;
   border-radius: 20px;
   font-size: 14px;
+  color: var(--text-color);
   transition: all 0.3s;
 }
 
@@ -143,12 +205,12 @@ main {
 .no-data {
   text-align: center;
   padding: 60px;
-  color: #888;
+  color: var(--text-light);
   font-size: 18px;
-  background-color: rgba(250, 251, 255, 0.7);
+  background-color: var(--loading-bg);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(230, 235, 245, 0.8);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
 }
 
 .loading::before {
@@ -176,9 +238,9 @@ main {
 }
 
 .vote-card {
-  background-color: white;
+  background-color: var(--card-bg);
   border-radius: 10px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
   transition: all 0.3s ease;
   border-width: 0 0 0 4px;
@@ -186,7 +248,7 @@ main {
 
 .vote-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .vote-card.collapsed .card-header {
@@ -194,7 +256,7 @@ main {
 }
 
 .vote-card.expanded {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .vote-card .card-content {
@@ -214,7 +276,7 @@ main {
 
 .card-header {
   padding: 16px 20px;
-  background-color: var(--secondary-color);
+  background-color: var(--card-header-bg);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -224,7 +286,7 @@ main {
 }
 
 .card-header:hover {
-  background-color: #dce6ff;
+  background-color: var(--card-header-hover-bg);
 }
 
 .card-actions {
@@ -245,12 +307,12 @@ main {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
 }
 
 .expand-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.3);
   transform: scale(1.1);
 }
 
@@ -276,7 +338,7 @@ main {
   background-color: var(--primary-color);
   color: white;
   padding: 4px 10px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
   display: inline-flex;
@@ -800,4 +862,452 @@ main {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Dark mode specific overrides */
+.dark-mode .timestamp {
+  background-color: rgba(42, 46, 66, 0.7);
+  color: var(--text-light);
+  border-radius: 12px;
+}
+
+.dark-mode .expand-toggle {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.dark-mode .expand-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+.dark-mode .ranking-list li:nth-child(odd) {
+  background-color: rgba(60, 66, 92, 0.5);
+}
+
+.dark-mode .ranking-list li:nth-child(even) {
+  background-color: rgba(70, 76, 102, 0.5);
+}
+
+.dark-mode .vote-description {
+  background-color: rgba(50, 54, 77, 0.5);
+}
+
+.dark-mode .eth-address {
+  background-color: #323751;
+  border: 1px solid #434863;
+  color: #e0e0e0;
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .ens-name {
+  color: var(--text-color);
+  border-bottom: 1px dotted #5a6377;
+}
+
+.dark-mode .vote-section h3,
+.dark-mode .vote-section.previous-vote h3,
+.dark-mode .vote-section.new-vote h3,
+.dark-mode .vote-section.initial-vote h3,
+.dark-mode .vote-section.no-previous-vote h3 {
+  color: #ffffff;
+  font-size: 17px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.dark-mode .vote-description {
+  background-color: rgba(60, 65, 90, 0.7);
+  color: #e0e0e0;
+  border: 1px solid rgba(80, 85, 120, 0.5);
+  padding: 12px 15px;
+}
+
+.dark-mode .vote-card.seed-data .card-header {
+  background-color: #32365a;
+}
+
+.dark-mode .vote-card.seed-data .vote-section h3 {
+  color: #ffffff;
+}
+
+.dark-mode .previous-vote h3,
+.dark-mode .new-vote h3,
+.dark-mode .initial-vote h3,
+.dark-mode .no-previous-vote h3 {
+  color: #ffffff;
+  font-size: 17px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .vote-section.initial-vote h3 {
+  color: #ffffff;
+}
+
+.dark-mode .vote-card.seed-data {
+  background-color: #2d3050;
+}
+
+.dark-mode .no-previous-vote .vote-description {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.dark-mode .color-legend {
+  background-color: #272b3f;
+  border: 1px solid #3a4259;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .legend-item {
+  margin: 0 5px;
+}
+
+.dark-mode .legend-color.new-color {
+  background-color: #66bb6a;
+}
+
+.dark-mode .legend-color.change-color {
+  background-color: #ef5350;
+}
+
+.dark-mode .legend-color.seed-color {
+  background-color: #8c9eff;
+}
+
+/* Fix checkbox label contrast */
+.dark-mode .checkbox-label {
+  color: var(--text-color);
+}
+
+/* Fix contrast for the filter buttons */
+.dark-mode .filter-buttons button {
+  background-color: #2a3045;
+  border: 1px solid #384366;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.dark-mode .filter-buttons button:hover {
+  background-color: #344068;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .filter-buttons button.active {
+  background-color: #5080ff;
+  border-color: #5080ff;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Fix the button contrast */
+.dark-mode .refresh-button {
+  background-color: #5080ff;
+}
+
+.dark-mode .refresh-button:hover {
+  background-color: #6191ff;
+}
+
+.dark-mode .load-more-button {
+  background-color: #5080ff;
+}
+
+.dark-mode .load-more-button:hover {
+  background-color: #6191ff;
+}
+
+/* Fix section titles in expanded cards */
+.dark-mode .vote-section h3 {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode .vote-section h3::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background-color: rgba(130, 168, 255, 0.5);
+}
+
+/* Fix the vote description text in the No Previous Vote section */
+.dark-mode .vote-description {
+  background-color: rgba(60, 65, 90, 0.7);
+  color: #e0e0e0;
+  border: 1px solid rgba(80, 85, 120, 0.5);
+  padding: 12px 15px;
+}
+
+/* Fix the seed data text and headers */
+.dark-mode .vote-card.seed-data .card-header {
+  background-color: #32365a;
+}
+
+/* Make the section titles for previous and new vote more visible */
+.dark-mode .previous-vote h3,
+.dark-mode .new-vote h3,
+.dark-mode .initial-vote h3,
+.dark-mode .no-previous-vote h3 {
+  color: #ffffff;
+  font-size: 17px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Improve contrast for seeded cards */
+.dark-mode .vote-card.seed-data {
+  background-color: #2d3050;
+}
+
+/* Improve contrast for the No Previous Vote section in seed data */
+.dark-mode .no-previous-vote .vote-description {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.dark-mode .card-content {
+  background-color: rgba(42, 46, 66, 0.95);
+  border-top: 1px solid #3d425e;
+}
+
+/* Improve contrast for the ranking lists */
+.dark-mode .ranking-list li {
+  color: #f0f0f0;
+}
+
+.dark-mode .ranking-list li:nth-child(odd) {
+  background-color: rgba(60, 66, 92, 0.5);
+}
+
+.dark-mode .ranking-list li:nth-child(even) {
+  background-color: rgba(70, 76, 102, 0.5);
+}
+
+/* Fix the Color Key text */
+.dark-mode .color-legend {
+  background-color: #272b3f;
+  border: 1px solid #3a4259;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .legend-title {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode .legend-label {
+  color: #e0e0e0;
+}
+
+/* Fix "Only show votes over" checkbox label */
+.dark-mode .checkbox-label {
+  color: #ffffff;
+  background-color: #2a304a;
+  padding: 8px 15px;
+  border-radius: 20px;
+  border: 1px solid #384366;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Make sure moved items are clearly visible in dark mode */
+.dark-mode .ranking-list li.added {
+  background-color: rgba(76, 175, 80, 0.3);
+  border-left: 4px solid rgba(102, 187, 106, 1);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode .ranking-list li.moved {
+  background-color: rgba(255, 167, 38, 0.3);
+  border-left: 4px solid rgba(255, 167, 38, 1);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark-mode .ranking-list li.removed-item {
+  background-color: rgba(239, 83, 80, 0.25);
+  border-left: 4px solid rgba(239, 83, 80, 0.8);
+  color: #c0c0c0;
+  text-decoration: line-through;
+}
+
+/* Improve the visibility of the orange change indicators */
+.dark-mode .ranking-list li.changed-item::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 75%;
+  border-radius: 2px;
+}
+
+.dark-mode .ranking-list li.added::after {
+  background-color: #66bb6a;
+}
+
+.dark-mode .ranking-list li.moved::after {
+  background-color: #ffa726;
+  width: 5px;
+}
+
+.dark-mode .ranking-list li.removed-item::after {
+  background-color: #ef5350;
+}
+
+/* Fix the Expand All button */
+.dark-mode .expand-all-button {
+  background-color: rgba(130, 168, 255, 0.2);
+  border: 1px solid rgba(130, 168, 255, 0.5);
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.dark-mode .expand-all-button:hover {
+  background-color: rgba(130, 168, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Improve filter buttons */
+.dark-mode .filter-buttons button {
+  background-color: #2a3045;
+  border: 1px solid #384366;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.dark-mode .filter-buttons button:hover {
+  background-color: #344068;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .filter-buttons button.active {
+  background-color: #5080ff;
+  border-color: #5080ff;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Fix contrast for Last updated text */
+.dark-mode .last-updated {
+  color: #b0b0b0;
+}
+
+/* Specifically enhance the moved item to make the yellow/orange more visible */
+.dark-mode .ranking-list li.moved::after {
+  background-color: #ffa726;
+  width: 5px;
+}
+
+/* Make the filter options and checkbox sections more visible */
+.dark-mode .filter-options {
+  background-color: #2a304a;
+  border: 1px solid #384366;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 12px 20px;
+}
+
+/* Make the checkbox more visible */
+.dark-mode input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #5080ff;
+  accent-color: #5080ff;
+}
+
+/* Fix the "Filter:" text color */
+.dark-mode .filter-section > span {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* Standardize border radiuses across UI elements */
+.dark-mode .vote-card {
+  border-radius: 12px;
+}
+
+.dark-mode .card-header {
+  border-radius: 12px 12px 0 0;
+}
+
+.dark-mode .filter-buttons button {
+  border-radius: 18px;
+}
+
+.dark-mode .filter-options {
+  border-radius: 20px;
+}
+
+.dark-mode .expand-all-button {
+  border-radius: 18px;
+}
+
+.dark-mode .color-legend {
+  border-radius: 12px;
+}
+
+.dark-mode .checkbox-label {
+  border-radius: 18px;
+}
+
+.dark-mode .ranking-list li {
+  border-radius: 8px;
+}
+
+.dark-mode .load-more-button {
+  border-radius: 20px;
+}
+
+.dark-mode .timestamp {
+  border-radius: 12px;
+}
+
+/* Fix cached indicator */
+.dark-mode .cached-indicator {
+  color: #8eff8e;
+  background-color: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Standardize voting power pill radius to match timestamps */
+.dark-mode .voting-power-pill {
+  background-color: #5080ff;
+  color: #000000;
+  box-shadow: 0 2px 6px rgba(82, 133, 255, 0.35);
+}
+
+/* Also fix timestamps for different vote types for consistency */
+.dark-mode .vote-card.initial-vote:not(.seed-data) .timestamp,
+.dark-mode .vote-card.changed-vote:not(.seed-data) .timestamp,
+.dark-mode .vote-card.seed-data .timestamp {
+  border-radius: 12px;
+}
+
+/* Make all timestamps consistent in all modes */
+.timestamp {
+  border-radius: 12px;
+}
+
+.vote-card.initial-vote:not(.seed-data) .timestamp,
+.vote-card.changed-vote:not(.seed-data) .timestamp,
+.vote-card.seed-data .timestamp {
+  border-radius: 12px;
+}
+
+/* Change the voting-power-pill in the standard rule set */
+.voting-power-pill {
+  border-radius: 12px;
 }

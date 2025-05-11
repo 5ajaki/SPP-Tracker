@@ -3,6 +3,7 @@ import axios from "axios";
 import { format } from "date-fns";
 import supabase from "../lib/supabaseClient";
 import { resolveENSName, prefetchENSNames } from "../lib/ensUtils";
+import ThemeToggle from "../components/ThemeToggle";
 
 // Main index page
 export default function Home() {
@@ -212,6 +213,7 @@ export default function Home() {
     <div className="container">
       <header>
         <h1>ENS DAO Service Provider Vote Tracker</h1>
+        <ThemeToggle />
 
         <div className="refresh-section">
           {lastRefresh && (

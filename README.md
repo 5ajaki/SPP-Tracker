@@ -10,6 +10,7 @@ A web application to track changes to votes for the ENS DAO Service Provider Pro
 - Displays a feed of vote events in a card-based UI
 - Shows both new votes and changed votes
 - Filters for viewing different types of vote events
+- Dark mode support with system preference detection
 - Stores complete vote history in a Supabase database
 - All historical vote data is retained (nothing is ever deleted or overwritten)
 - ENS name resolution using ethers.js (with caching)
@@ -29,6 +30,15 @@ A web application to track changes to votes for the ENS DAO Service Provider Pro
   - Green background: Newly added items
   - Orange background: Items that moved positions
   - Red strikethrough: Removed items
+
+## Dark Mode
+
+The application supports both light and dark modes:
+
+- Click the sun/moon icon in the top-right corner to toggle between modes
+- Automatically detects system preference on first load
+- Persists your preference between sessions
+- Optimized color palette for better readability in both modes
 
 ## Tech Stack
 
