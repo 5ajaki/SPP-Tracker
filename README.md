@@ -1,4 +1,4 @@
-<!-- Last updated: May 10, 2024 -->
+<!-- Last updated: May 11, 2025 -->
 
 # ENS DAO Service Provider Vote Tracker
 
@@ -25,7 +25,6 @@ A web application to track changes to votes for the ENS DAO Service Provider Pro
 - **Border Colors**:
   - Green: New votes
   - Red: Changed votes
-  - Blue: Seed data
 - **Vote Change Highlighting**:
   - Green background: Newly added items
   - Orange background: Items that moved positions
@@ -64,7 +63,6 @@ Stores the chronological stream of vote events (both new votes and vote changes)
 - `previous_ranking`: Previous vote selections (only for change events)
 - `ens_name`: ENS name of the voter (if resolved)
 - `discovered_at`: When the vote or change was discovered
-- `is_seed`: Whether this is from seed data (true) or live updates (false)
 
 ### `cached_votes`
 
@@ -87,6 +85,7 @@ Caches filtered query results for improved performance:
    ```
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
    NEXT_PUBLIC_ETH_RPC_URL=your-ethereum-rpc-url
    ```
 4. Set up the caching table:
@@ -97,10 +96,6 @@ Caches filtered query results for improved performance:
    ```
    npm run dev
    ```
-
-## Seeding Initial Data
-
-When the application starts with an empty database, you'll see a "Import Seed Data" button that will import the initial seed data from the votes CSV file. The seed data will be marked with a timestamp of May 10, 2025 at 2:00 PM Eastern time.
 
 ## How the Vote Monitoring Works
 
@@ -138,7 +133,12 @@ The application uses a database-backed caching system to improve performance:
 
 ## Deploying
 
-The application is set up to be deployed on Vercel, with its database hosted on Supabase.
+The application is set up to be deployed on Vercel, with its database hosted on Supabase. Make sure to set the following environment variables in your Vercel project:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_ETH_RPC_URL`
 
 ## License
 
