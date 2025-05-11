@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-cache": "node scripts/create-cache-table.js",
+    "cleanup-cache": "node scripts/cleanup-cache.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",

@@ -17,6 +17,7 @@ A web application to track changes to votes for the ENS DAO Service Provider Pro
 - Vote change highlighting for added, moved, and removed items
 - Collapsible vote cards with "Expand All" functionality
 - Filter option to show only votes over 100 $ENS (enabled by default)
+- Database-backed query caching for improved performance
 
 ## Visual Indicators
 
@@ -39,7 +40,7 @@ A web application to track changes to votes for the ENS DAO Service Provider Pro
 
 ## Database Structure
 
-The application uses a single main table:
+The application uses two main tables:
 
 ### `voter_events`
 
@@ -55,6 +56,16 @@ Stores the chronological stream of vote events (both new votes and vote changes)
 - `discovered_at`: When the vote or change was discovered
 - `is_seed`: Whether this is from seed data (true) or live updates (false)
 
+### `cached_votes`
+
+Caches filtered query results for improved performance:
+
+- `id`: Primary key (serial)
+- `cache_key`: Unique key based on filter parameters
+- `cached_data`: JSON data of the query results
+- `total_count`: Total number of matching records
+- `cached_at`: When the cache entry was created
+
 ## Setup
 
 1. Clone the repository
@@ -68,7 +79,11 @@ Stores the chronological stream of vote events (both new votes and vote changes)
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    NEXT_PUBLIC_ETH_RPC_URL=your-ethereum-rpc-url
    ```
-4. Run the development server:
+4. Set up the caching table:
+   ```
+   npm run setup-cache
+   ```
+5. Run the development server:
    ```
    npm run dev
    ```
@@ -97,6 +112,19 @@ Additional UI options:
 
 - "Only show votes over 100 $ENS" checkbox (enabled by default)
 - "Expand All" / "Collapse All" button to manage vote card visibility
+
+## Performance Optimization
+
+The application uses a database-backed caching system to improve performance:
+
+- Query results are cached for 10 minutes
+- New votes automatically invalidate relevant cache entries
+- Cache entries older than 24 hours are automatically removed
+- The UI shows an indicator when viewing cached data
+- The cache can be manually reset with:
+  ```
+  npm run cleanup-cache
+  ```
 
 ## Deploying
 

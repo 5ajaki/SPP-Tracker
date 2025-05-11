@@ -564,6 +564,13 @@ header h1 {
   font-size: 14px;
 }
 
+/* Cache indicator */
+.cached-indicator {
+  color: #8bc34a;
+  font-style: italic;
+  font-size: 13px;
+}
+
 /* Load more button styles */
 .load-more-container {
   display: flex;

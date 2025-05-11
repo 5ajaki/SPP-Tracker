@@ -18,6 +18,8 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 10;
   const [ensNamesMap, setEnsNamesMap] = useState(new Map());
+  const [isCachedData, setIsCachedData] = useState(false);
+  const [cacheAge, setCacheAge] = useState(null);
 
   // Load vote events on page load
   useEffect(() => {
@@ -71,33 +73,25 @@ export default function Home() {
       // If we're loading more, increment the page, otherwise use the current page
       const currentPage = loadMore ? page + 1 : page;
 
-      let query = supabase
-        .from("voter_events")
-        .select("*", { count: "exact" })
-        .order("discovered_at", { ascending: false });
+      // Use the cached votes API endpoint
+      const response = await axios.get("/api/cached-votes", {
+        params: {
+          filter,
+          showHighPower: showHighPower.toString(),
+          page: currentPage,
+          pageSize: PAGE_SIZE,
+        },
+      });
 
-      // Apply type filter
-      if (filter === "new") {
-        query = query.eq("event_type", "new");
-      } else if (filter === "change") {
-        query = query.eq("event_type", "change");
-      }
+      // Extract the data and count from the response
+      const { data, count, fromCache, cacheAge } = response.data;
 
-      // Apply voting power filter
-      if (showHighPower) {
-        query = query.gte("voting_power", 100);
-      }
+      // Update cache status
+      setIsCachedData(fromCache);
+      setCacheAge(cacheAge || null);
 
-      // Apply pagination
-      const start = currentPage * PAGE_SIZE;
-      const end = start + PAGE_SIZE - 1;
-      query = query.range(start, end);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error("Error fetching vote events:", error);
-        return;
+      if (fromCache) {
+        console.log(`Using cached data (${cacheAge}s old)`);
       }
 
       // Check if we have more items to load
@@ -108,11 +102,19 @@ export default function Home() {
         setPage(currentPage);
       }
 
+      // Create a map of existing vote event IDs to avoid duplicates
+      const existingEventIds = loadMore
+        ? new Set(voteEvents.map((event) => event.vote_event_id))
+        : new Set();
+
       // Initialize each event with an isExpanded property
-      const formattedData = (data || []).map((event) => ({
-        ...event,
-        isExpanded: expandAll,
-      }));
+      // Only include events that aren't already in the list
+      const formattedData = (data || [])
+        .filter((event) => !existingEventIds.has(event.vote_event_id))
+        .map((event) => ({
+          ...event,
+          isExpanded: expandAll,
+        }));
 
       // If loading more, append to existing events, otherwise replace
       setVoteEvents((prev) => {
@@ -160,6 +162,17 @@ export default function Home() {
       if (response.status === 200) {
         // Only fetch new events if changes were detected
         if (response.data.newEvents > 0) {
+          console.log(
+            `Detected ${response.data.newEvents} new events, invalidating cache`
+          );
+
+          // Invalidate cache for current filter configuration
+          await axios.post("/api/refresh-cache", {
+            refreshKeys: [
+              `${filter}_${showHighPower.toString()}_${page}_${PAGE_SIZE}`,
+            ],
+          });
+
           // Reset pagination and fetch fresh data
           setPage(0);
           setVoteEvents([]);
@@ -205,6 +218,12 @@ export default function Home() {
             <p className="last-updated">
               Last updated:{" "}
               {format(new Date(lastRefresh), "MM/dd/yyyy, h:mm:ss a")}
+              {isCachedData && cacheAge && (
+                <span className="cached-indicator" title="Using cached data">
+                  {" "}
+                  (cached {cacheAge}s ago)
+                </span>
+              )}
             </p>
           )}
         </div>
