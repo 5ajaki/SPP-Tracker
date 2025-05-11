@@ -268,18 +268,6 @@ export default function Home() {
                 <span className="legend-color seed-color"></span>
                 <span className="legend-label">Seed Data</span>
               </div>
-              <div className="legend-item">
-                <span className="legend-color added-color"></span>
-                <span className="legend-label">Added</span>
-              </div>
-              <div className="legend-item">
-                <span className="legend-color moved-color"></span>
-                <span className="legend-label">Moved</span>
-              </div>
-              <div className="legend-item">
-                <span className="legend-color removed-color"></span>
-                <span className="legend-label">Removed</span>
-              </div>
             </div>
           </div>
 
@@ -439,7 +427,7 @@ function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
         return "Invalid date";
       }
 
-      // Format using date-fns
+      // Format using date-fns with local time (already uses user's timezone by default)
       return format(date, "MM/dd/yyyy 'at' h:mm a");
     } catch (error) {
       console.error("Error formatting date:", error, timestamp);
@@ -584,7 +572,11 @@ function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
             <>
               <div className="vote-section no-previous-vote">
                 <h3>No Previous Vote</h3>
-                <div className="vote-description">First time voter</div>
+                <div className="vote-description">
+                  {event.is_seed
+                    ? "Ballot imported from May 10, 2025 data snapshot"
+                    : "This was the voter's first ballot"}
+                </div>
               </div>
 
               <div className="vote-section initial-vote">
