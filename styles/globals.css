@@ -277,6 +277,59 @@ header h1 {
   background-color: var(--light-gray);
 }
 
+/* Styles for highlighting changed items */
+.ranking-list li.changed-item {
+  position: relative;
+}
+
+.ranking-list li.changed-item::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.ranking-list li.added {
+  background-color: rgba(76, 175, 80, 0.15); /* Light green */
+  font-weight: 500;
+}
+
+.ranking-list li.added::before {
+  background-color: #4caf50; /* Green */
+}
+
+.ranking-list li.moved {
+  background-color: rgba(255, 152, 0, 0.15); /* Light orange */
+  font-weight: 500;
+}
+
+.ranking-list li.moved::before {
+  background-color: #ff9800; /* Orange */
+}
+
+.ranking-list li.removed-item {
+  background-color: rgba(244, 67, 54, 0.15); /* Light red */
+  text-decoration: line-through;
+  color: #777;
+  position: relative;
+}
+
+.ranking-list li.removed-item::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #f44336; /* Red */
+}
+
 @media (max-width: 768px) {
   .card-content {
     flex-direction: column;

@@ -197,6 +197,24 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="change-legend">
+            <div className="legend-title">Vote Changes:</div>
+            <div className="legend-items">
+              <div className="legend-item">
+                <span className="legend-color added-color"></span>
+                <span className="legend-label">Added</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color moved-color"></span>
+                <span className="legend-label">Moved</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color removed-color"></span>
+                <span className="legend-label">Removed</span>
+              </div>
+            </div>
+          </div>
+
           <div className="filter-options">
             <label className="checkbox-label">
               <input
@@ -378,6 +396,54 @@ function VoteEventCard({ event, isExpanded, toggleExpansion }) {
     return choices;
   };
 
+  // Determine if an item has changed position or is new/removed
+  const getChangeStatus = (previousRankings, newRankings) => {
+    if (!previousRankings || !newRankings) return {};
+
+    const changeMap = {};
+    const previousItems = new Map();
+
+    // Map items to their positions in the previous ranking
+    previousRankings.forEach((item, index) => {
+      previousItems.set(item, index);
+    });
+
+    // Compare new ranking with previous to identify changes
+    newRankings.forEach((item, newIndex) => {
+      const previousIndex = previousItems.has(item)
+        ? previousItems.get(item)
+        : -1;
+
+      if (previousIndex === -1) {
+        // Item is new
+        changeMap[newIndex] = "added";
+      } else if (previousIndex !== newIndex) {
+        // Item moved position
+        changeMap[newIndex] = "moved";
+      }
+
+      // Remove from previous items to track what's left (removed items)
+      previousItems.delete(item);
+    });
+
+    // Any items left in previousItems were removed
+    const removedIndices = Array.from(previousItems.values());
+
+    return {
+      changed: changeMap,
+      removedIndices,
+    };
+  };
+
+  // For changed votes, compute which rows have changes
+  const changeAnalysis =
+    event.event_type === "change"
+      ? getChangeStatus(
+          parseRanking(event.previous_ranking),
+          parseRanking(event.choice_ranking)
+        )
+      : null;
+
   return (
     <div
       className={`vote-card ${
@@ -430,7 +496,17 @@ function VoteEventCard({ event, isExpanded, toggleExpansion }) {
                 <h3>Previous Vote</h3>
                 <ol className="ranking-list">
                   {parseRanking(event.previous_ranking).map((item, index) => (
-                    <li key={index}>{item}</li>
+                    <li
+                      key={index}
+                      className={
+                        changeAnalysis &&
+                        changeAnalysis.removedIndices.includes(index)
+                          ? "removed-item"
+                          : ""
+                      }
+                    >
+                      {item}
+                    </li>
                   ))}
                 </ol>
               </div>
@@ -439,7 +515,16 @@ function VoteEventCard({ event, isExpanded, toggleExpansion }) {
                 <h3>New Vote</h3>
                 <ol className="ranking-list">
                   {parseRanking(event.choice_ranking).map((item, index) => (
-                    <li key={index}>{item}</li>
+                    <li
+                      key={index}
+                      className={
+                        changeAnalysis && changeAnalysis.changed[index]
+                          ? `changed-item ${changeAnalysis.changed[index]}`
+                          : ""
+                      }
+                    >
+                      {item}
+                    </li>
                   ))}
                 </ol>
               </div>

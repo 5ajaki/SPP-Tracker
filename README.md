@@ -12,12 +12,29 @@ A web application to track changes to votes for the ENS DAO Service Provider Pro
 - Filters for viewing different types of vote events
 - Stores complete vote history in a Supabase database
 - All historical vote data is retained (nothing is ever deleted or overwritten)
+- ENS name resolution using ethers.js (with caching)
+- Visual indicators for different vote types with colored borders
+- Vote change highlighting for added, moved, and removed items
+- Collapsible vote cards with "Expand All" functionality
+- Filter option to show only votes over 100 $ENS (enabled by default)
+
+## Visual Indicators
+
+- **Border Colors**:
+  - Green: New votes
+  - Red: Changed votes
+  - Blue: Seed data
+- **Vote Change Highlighting**:
+  - Green background: Newly added items
+  - Orange background: Items that moved positions
+  - Red strikethrough: Removed items
 
 ## Tech Stack
 
 - **Frontend**: Next.js, React
 - **Backend**: Next.js API routes, Supabase
 - **Database**: PostgreSQL (via Supabase)
+- **Blockchain**: ethers.js for ENS resolution
 - **Deployment**: Vercel
 
 ## Database Structure
@@ -49,6 +66,7 @@ Stores the chronological stream of vote events (both new votes and vote changes)
    ```
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   NEXT_PUBLIC_ETH_RPC_URL=your-ethereum-rpc-url
    ```
 4. Run the development server:
    ```
@@ -61,18 +79,24 @@ When the application starts with an empty database, you'll see a "Import Seed Da
 
 ## How the Vote Monitoring Works
 
-1. The application polls the ENS DAO API every 120 seconds
+1. The application polls the ENS DAO API every 120 seconds automatically
 2. New votes are compared against the existing data
 3. If a new vote or a vote change is detected, it's added to the database
 4. The UI updates to show the latest vote events
+5. ENS names are resolved and cached for Ethereum addresses
 
-## Filtering
+## Filtering and UI Controls
 
 You can filter the vote events by:
 
 - All Events (default)
 - New Votes (first-time voters)
 - Changed Votes (voters who modified their ballot)
+
+Additional UI options:
+
+- "Only show votes over 100 $ENS" checkbox (enabled by default)
+- "Expand All" / "Collapse All" button to manage vote card visibility
 
 ## Deploying
 
