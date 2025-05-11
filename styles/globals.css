@@ -274,18 +274,20 @@ main {
 }
 
 .vote-card.expanded {
-  box-shadow: var(--card-shadow-hover);
+  overflow: visible;
 }
 
 .vote-card .card-content {
   transition: max-height 0.3s ease, opacity 0.2s ease;
   opacity: 0;
   max-height: 0;
+  overflow: hidden;
 }
 
 .vote-card.expanded .card-content {
   opacity: 1;
-  max-height: 2000px;
+  max-height: none;
+  overflow: visible;
 }
 
 .vote-card.collapsed .card-content {
@@ -398,6 +400,7 @@ main {
   display: flex;
   background-color: rgba(250, 251, 255, 0.7);
   border-top: 1px solid rgba(225, 225, 225, 0.5);
+  overflow: visible;
 }
 
 .vote-section {
@@ -551,12 +554,28 @@ main {
   }
 
   .vote-section {
-    padding: 18px 0;
+    padding: 12px 0;
+    margin-bottom: 10px;
   }
 
   .vote-section:first-child {
+    padding-top: 0;
+    width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+  }
+
+  .vote-section:last-child {
+    padding-bottom: 0;
+    width: 100%;
+  }
+
+  .vote-description {
+    margin: 0;
+    padding: 10px;
+    width: 100%;
   }
 
   .card-header {
@@ -576,7 +595,7 @@ main {
   }
 
   .filter-controls {
-    gap: 10px;
+    padding-bottom: 0;
   }
 
   .filter-options {
@@ -604,6 +623,7 @@ main {
     font-size: 28px;
     line-height: 1.3;
     padding: 0 15px;
+    margin-bottom: 15px;
   }
 
   .ranking-list {
@@ -620,6 +640,7 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 15px;
   }
 
   .timestamp {
@@ -688,6 +709,124 @@ main {
     width: 100%;
     overflow-x: hidden;
   }
+
+  /* Improve filter controls layout on mobile */
+  .filter-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  /* Improve filter buttons layout */
+  .filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  /* Ensure that the label is properly aligned */
+  .filter-section > span {
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  /* Fix color legend layout */
+  .color-legend {
+    display: grid;
+    grid-template-columns: auto;
+    justify-content: center;
+    text-align: center;
+    padding: 15px;
+    margin: 15px auto;
+    max-width: 100%;
+  }
+
+  .legend-title {
+    margin-bottom: 10px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .legend-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Remove any overflow scrolling and ensure all content is visible */
+  .card-content {
+    overflow: visible;
+    max-height: none;
+    padding: 15px;
+  }
+
+  .vote-card.expanded .card-content {
+    max-height: none;
+  }
+
+  /* Ensure the expand all button is properly aligned */
+  .expand-all-button {
+    display: block;
+    margin: 15px auto;
+  }
+
+  /* Improve the checkbox container */
+  .filter-options {
+    padding: 12px;
+    margin: 10px auto;
+    max-width: 100%;
+  }
+
+  /* Add better spacing for the last updated text */
+  .last-updated {
+    margin: 10px auto;
+    text-align: center;
+  }
+
+  /* Fix the cached indicator to prevent wrapping */
+  .cached-indicator {
+    white-space: nowrap;
+  }
+
+  /* Override any max-height limitations */
+  .vote-card.expanded .card-content {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Fix card transition for mobile */
+  .vote-card .card-content {
+    transition: opacity 0.2s ease;
+  }
+
+  /* Ensure ballot items are fully visible */
+  .vote-section {
+    width: 100%;
+  }
+
+  /* Ensure the color legend is properly spaced */
+  .color-legend {
+    margin: 20px auto;
+  }
+
+  /* Improve the "Last updated" display */
+  .refresh-section {
+    margin: 15px auto;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Reduce container padding on mobile */
+  .container {
+    padding: 15px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -744,6 +883,29 @@ main {
   .ranking-list li {
     padding: 10px;
     font-size: 14px;
+  }
+
+  /* Improve buttons on very small screens */
+  .filter-buttons button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Fix the card content padding */
+  .card-content {
+    padding: 12px 10px;
+  }
+
+  /* Ensure ranking lists are properly displayed */
+  .ranking-list {
+    padding-left: 0;
+  }
+
+  .ranking-list li {
+    margin-bottom: 5px;
+    padding: 8px;
+    font-size: 14px;
+    width: 100%;
   }
 }
 
