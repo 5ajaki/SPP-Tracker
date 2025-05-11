@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
 import supabase from "../lib/supabaseClient";
-import { resolveENSName } from "../lib/ensUtils";
+import { resolveENSName, prefetchENSNames } from "../lib/ensUtils";
 
 // Main index page
 export default function Home() {
@@ -17,6 +17,7 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 10;
+  const [ensNamesMap, setEnsNamesMap] = useState(new Map());
 
   // Load vote events on page load
   useEffect(() => {
@@ -45,6 +46,18 @@ export default function Home() {
       }))
     );
   }, [expandAll]);
+
+  // Prefetch ENS names for the vote events
+  useEffect(() => {
+    const fetchEnsNames = async () => {
+      if (voteEvents.length > 0) {
+        const namesMap = await prefetchENSNames(voteEvents);
+        setEnsNamesMap(namesMap);
+      }
+    };
+
+    fetchEnsNames();
+  }, [voteEvents]);
 
   // Fetch vote events from the database
   const fetchVoteEvents = async (loadMore = false) => {
@@ -236,12 +249,6 @@ export default function Home() {
                 <span className="legend-color seed-color"></span>
                 <span className="legend-label">Seed Data</span>
               </div>
-            </div>
-          </div>
-
-          <div className="change-legend">
-            <div className="legend-title">Vote Changes:</div>
-            <div className="legend-items">
               <div className="legend-item">
                 <span className="legend-color added-color"></span>
                 <span className="legend-label">Added</span>
@@ -299,6 +306,7 @@ export default function Home() {
                   toggleExpansion={() =>
                     toggleCardExpansion(event.vote_event_id)
                   }
+                  cachedEnsName={ensNamesMap.get(event.voter_address)}
                 />
               ))}
             </div>
@@ -322,17 +330,25 @@ export default function Home() {
 }
 
 // Vote Event Card Component
-function VoteEventCard({ event, isExpanded, toggleExpansion }) {
-  const [ensName, setEnsName] = useState(event.ens_name || null);
+function VoteEventCard({ event, isExpanded, toggleExpansion, cachedEnsName }) {
+  const [ensName, setEnsName] = useState(
+    event.ens_name || cachedEnsName || null
+  );
   const [loadingEns, setLoadingEns] = useState(false);
 
-  // Try to resolve ENS name on mount if not already available
+  // Try to resolve ENS name on mount if not already available and not provided via cache
   useEffect(() => {
+    // If we were passed a cached ENS name from the parent, use it
+    if (cachedEnsName) {
+      setEnsName(cachedEnsName);
+      return;
+    }
+
     const resolveEns = async () => {
-      if (!event.ens_name && event.voter_address && !loadingEns) {
+      if (!event.ens_name && event.voter_address && !loadingEns && !ensName) {
         try {
           setLoadingEns(true);
-          // Use our new direct ENS lookup utility
+          // Use our direct ENS lookup utility
           const name = await resolveENSName(event.voter_address);
           if (name) {
             setEnsName(name);
@@ -350,10 +366,17 @@ function VoteEventCard({ event, isExpanded, toggleExpansion }) {
     };
 
     // Only try to resolve if the component mounts without an ENS name
-    if (!event.ens_name && event.voter_address) {
+    if (!event.ens_name && !ensName && event.voter_address) {
       resolveEns();
     }
-  }, [event.voter_address, event.ens_name]);
+  }, [event.voter_address, event.ens_name, cachedEnsName, ensName]);
+
+  // Update ensName if cachedEnsName changes
+  useEffect(() => {
+    if (cachedEnsName && cachedEnsName !== ensName) {
+      setEnsName(cachedEnsName);
+    }
+  }, [cachedEnsName, ensName]);
 
   // Format voting power to display with appropriate precision
   const formatVotingPower = (power) => {
