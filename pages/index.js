@@ -200,10 +200,14 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error seeding data:", error);
-      alert(
-        "Error seeding data: " +
-          (error.response?.data?.message || error.message)
-      );
+      if (error.response?.status === 404) {
+        alert("Seed data functionality is not available in production mode.");
+      } else {
+        alert(
+          "Error seeding data: " +
+            (error.response?.data?.message || error.message)
+        );
+      }
     } finally {
       setIsSeedingData(false);
     }

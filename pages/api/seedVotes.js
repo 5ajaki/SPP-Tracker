@@ -3,6 +3,11 @@ import path from "path";
 import { importSeedData } from "../../lib/voteFetcher";
 
 export default async function handler(req, res) {
+  // Only allow in development mode
+  if (process.env.NODE_ENV !== "development") {
+    return res.status(404).json({ message: "Not found" });
+  }
+
   // Only allow POST requests
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });

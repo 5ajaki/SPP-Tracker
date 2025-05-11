@@ -1,4 +1,5 @@
 import supabase from "../../lib/supabaseClient";
+import supabaseAdmin from "../../lib/supabaseAdmin";
 
 // Cache expiration time in milliseconds (10 minutes)
 const CACHE_EXPIRATION = 10 * 60 * 1000;
@@ -98,8 +99,11 @@ export default async function handler(req, res) {
     // Convert back to array
     const uniqueData = Array.from(uniqueEventMap.values());
 
+    // Use admin client for database writes if available
+    const dbClient = supabaseAdmin || supabase;
+
     // Store the results in cache
-    const { error: insertError } = await supabase.from("cached_votes").upsert(
+    const { error: insertError } = await dbClient.from("cached_votes").upsert(
       {
         cache_key: cacheKey,
         cached_data: JSON.stringify(uniqueData),

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "setup-cache": "node scripts/create-cache-table.js",
-    "cleanup-cache": "node scripts/cleanup-cache.js"
+    "cleanup-cache": "node scripts/cleanup-cache.js",
+    "seed-data": "node scripts/seed-data.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",

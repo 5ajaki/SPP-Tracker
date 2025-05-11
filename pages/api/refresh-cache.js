@@ -1,4 +1,5 @@
 import supabase from "../../lib/supabaseClient";
+import supabaseAdmin from "../../lib/supabaseAdmin";
 
 // Max age for cache entries in hours
 const MAX_CACHE_AGE_HOURS = 24;
@@ -11,6 +12,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
+  // Use admin client for database writes if available
+  const dbClient = supabaseAdmin || supabase;
+
+  // In production, limit access to this endpoint
+  if (process.env.NODE_ENV === "production") {
+    // If environment variable isn't set, disable endpoint in production
+    if (!process.env.ADMIN_API_KEY) {
+      return res.status(404).json({ message: "Not available in production" });
+    }
+
+    // Check for API key in header
+    const apiKey = req.headers["x-api-key"];
+    if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+  }
+
   try {
     // Extract parameters
     const { refreshKeys = [], cleanupOnly = false } = req.body;
@@ -21,7 +39,7 @@ export default async function handler(req, res) {
     const oldDate = new Date();
     oldDate.setHours(oldDate.getHours() - MAX_CACHE_AGE_HOURS);
 
-    const { data: oldEntries, error: cleanupError } = await supabase
+    const { data: oldEntries, error: cleanupError } = await dbClient
       .from("cached_votes")
       .delete()
       .lt("cached_at", oldDate.toISOString())
@@ -36,7 +54,7 @@ export default async function handler(req, res) {
 
     // Force refresh specific cache entries if requested
     if (!cleanupOnly && refreshKeys.length > 0) {
-      const { data: refreshedData, error: refreshError } = await supabase
+      const { data: refreshedData, error: refreshError } = await dbClient
         .from("cached_votes")
         .delete()
         .in("cache_key", refreshKeys)

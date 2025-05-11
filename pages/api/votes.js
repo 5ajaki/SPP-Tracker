@@ -1,7 +1,8 @@
 // API endpoint to fetch votes data from ENS DAO
 import axios from "axios";
 import { parse } from "csv-parse/sync";
-import { supabase } from "../../lib/supabaseClient";
+import supabase from "../../lib/supabaseClient";
+import supabaseAdmin from "../../lib/supabaseAdmin";
 
 // Configure axios with retry logic
 const axiosWithRetry = axios.create();
@@ -25,6 +26,9 @@ const retryRequest = async (fn, retries = 3, delay = 1000) => {
 // Process CSV data and update Supabase
 async function processVotesData(csvData) {
   try {
+    // Use the admin client for write operations if available, otherwise use regular client
+    const dbClient = supabaseAdmin || supabase;
+
     // Parse CSV
     const records = parse(csvData, {
       columns: true,
@@ -118,7 +122,7 @@ async function processVotesData(csvData) {
           });
 
           // Insert a new vote record - DO NOT update the old vote
-          await supabase.from("votes").insert({
+          await dbClient.from("votes").insert({
             voter_address: voterAddress,
             voting_power: parseFloat(record["Voting Power"] || "0"),
             top_picks: JSON.stringify(choiceRanking),
@@ -142,7 +146,7 @@ async function processVotesData(csvData) {
         });
 
         // Insert the new vote in the votes table
-        await supabase.from("votes").insert({
+        await dbClient.from("votes").insert({
           voter_address: voterAddress,
           voting_power: parseFloat(record["Voting Power"] || "0"),
           top_picks: JSON.stringify(choiceRanking),
@@ -160,7 +164,7 @@ async function processVotesData(csvData) {
       console.log(
         `Inserting ${voteEvents.length} vote events into the vote_changes table`
       );
-      const { error: insertError } = await supabase
+      const { error: insertError } = await dbClient
         .from("vote_changes")
         .insert(voteEvents);
 
@@ -207,9 +211,12 @@ export default async function handler(req, res) {
     // Process the CSV data and update the database
     const result = await processVotesData(response.data);
 
+    // Use the admin client for storage operations if available
+    const dbClient = supabaseAdmin || supabase;
+
     // Store the CSV backup
     const timestamp = new Date().toISOString();
-    await supabase.storage
+    await dbClient.storage
       .from("vote-data")
       .upload(`backups/${timestamp}.csv`, response.data);
 
