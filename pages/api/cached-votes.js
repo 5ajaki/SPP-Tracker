@@ -2,7 +2,8 @@ import supabase from "../../lib/supabaseClient";
 import supabaseAdmin from "../../lib/supabaseAdmin";
 
 // Cache expiration time in milliseconds (10 minutes)
-const CACHE_EXPIRATION = 10 * 60 * 1000;
+// UPDATE: Vote is complete, extending cache to 30 days
+const CACHE_EXPIRATION = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**
  * API endpoint to get cached vote events or fetch and cache them if not available

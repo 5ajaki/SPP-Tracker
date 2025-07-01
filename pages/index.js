@@ -26,8 +26,9 @@ export default function Home() {
   useEffect(() => {
     fetchVoteEvents();
     // Set up polling every 120 seconds (2 minutes)
-    const interval = setInterval(refreshVotes, 120000);
-    return () => clearInterval(interval);
+    // DISABLED: Vote is complete, no need to poll for new votes
+    // const interval = setInterval(refreshVotes, 120000);
+    // return () => clearInterval(interval);
   }, []);
 
   // Refresh votes on filter change
@@ -74,8 +75,8 @@ export default function Home() {
       // If we're loading more, increment the page, otherwise use the current page
       const currentPage = loadMore ? page + 1 : page;
 
-      // Use the cached votes API endpoint
-      const response = await axios.get("/api/cached-votes", {
+      // Use the static votes API endpoint since vote is complete
+      const response = await axios.get("/api/static-votes", {
         params: {
           filter,
           showHighPower: showHighPower.toString(),
@@ -85,14 +86,14 @@ export default function Home() {
       });
 
       // Extract the data and count from the response
-      const { data, count, fromCache, cacheAge } = response.data;
+      const { data, count, isStaticData, dataGeneratedAt } = response.data;
 
-      // Update cache status
-      setIsCachedData(fromCache);
-      setCacheAge(cacheAge || null);
+      // Update cache status for static data
+      setIsCachedData(true);
+      setCacheAge(null);
 
-      if (fromCache) {
-        console.log(`Using cached data (${cacheAge}s old)`);
+      if (isStaticData) {
+        console.log(`Using static vote data from ${dataGeneratedAt}`);
       }
 
       // Check if we have more items to load
@@ -219,19 +220,19 @@ export default function Home() {
         <ThemeToggle />
         <h1>ENS DAO Service Provider Vote Tracker</h1>
 
+        <div className="vote-status-banner">
+          <div className="status-icon">✓</div>
+          <div className="status-text">
+            <strong>Vote Completed</strong>
+            <span>
+              Showing final results: 166 voters, 204 total events (38 vote
+              changes)
+            </span>
+          </div>
+        </div>
+
         <div className="refresh-section">
-          {lastRefresh && (
-            <p className="last-updated">
-              Last updated:{" "}
-              {format(new Date(lastRefresh), "MM/dd/yyyy, h:mm:ss a")}
-              {isCachedData && cacheAge && (
-                <span className="cached-indicator" title="Using cached data">
-                  {" "}
-                  (cached {cacheAge}s ago)
-                </span>
-              )}
-            </p>
-          )}
+          {/* Last refresh removed - using static final vote data */}
         </div>
 
         <div className="filter-controls">
